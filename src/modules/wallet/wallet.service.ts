@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, forwardRef, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -16,11 +16,16 @@ export class WalletService {
   constructor(
     @InjectRepository(Wallet)
     private walletRepository: Repository<Wallet>,
+
     @InjectRepository(Transaction)
     private transactionRepository: Repository<Transaction>,
+
     @InjectQueue('transactions')
     private transactionQueue: Queue,
+
     private dataSource: DataSource,
+
+    @Inject(forwardRef(() => PaymentsService))
     private paymentsService: PaymentsService,
   ) {}
 
@@ -81,7 +86,7 @@ export class WalletService {
 
     // Update transaction with external reference
     await this.transactionRepository.update(transaction.id, {
-      externalReference: paymentData.data.tx_ref,
+      reference: paymentData.data.tx_ref,
       metadata: paymentData.data,
     });
 
@@ -147,7 +152,7 @@ export class WalletService {
     const { tx_ref, status, transaction_id } = payload;
     
     const transaction = await this.transactionRepository.findOne({
-      where: { externalReference: tx_ref },
+      where: { reference: tx_ref },
       relations: ['wallet'],
     });
 

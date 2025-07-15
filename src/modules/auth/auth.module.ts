@@ -7,11 +7,14 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
+import { LocalAuthGuard } from '../common/guards/local-auth.guard';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
+    NotificationsModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
@@ -20,10 +23,10 @@ import { LocalStrategy } from './strategies/local.strategy';
           expiresIn: configService.get('JWT_EXPIRES_IN', '7d'),
         },
       }),
-    }),
+    })
   ],
-  providers: [AuthService, JwtStrategy, LocalStrategy],
+  providers: [AuthService, JwtStrategy, LocalStrategy, LocalAuthGuard],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, LocalAuthGuard],
 })
-export class AuthModule {}
+export class AuthModule {} 

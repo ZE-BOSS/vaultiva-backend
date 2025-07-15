@@ -11,15 +11,20 @@ import { Notification } from '@/modules/notifications/entities/notification.enti
 @Injectable()
 export class DatabaseConfig implements TypeOrmOptionsFactory {
   constructor(private configService: ConfigService) {}
+  
+  private DB_PREFIX = 'DB_PUBLIC';
+  private payload = {
+    type: 'postgres' as any,
+    host: this.configService.get(`${this.DB_PREFIX}_HOST`),
+    port: this.configService.get(`${this.DB_PREFIX}_PORT`),
+    username: this.configService.get(`${this.DB_PREFIX}_USERNAME`),
+    password: this.configService.get(`${this.DB_PREFIX}_PASSWORD`),
+    database: this.configService.get(`${this.DB_PREFIX}_NAME`),
+  }
 
   createTypeOrmOptions(): TypeOrmModuleOptions {
     return {
-      type: 'postgres',
-      host: this.configService.get('DATABASE_HOST'),
-      port: this.configService.get('DATABASE_PORT'),
-      username: this.configService.get('DATABASE_USERNAME'),
-      password: this.configService.get('DATABASE_PASSWORD'),
-      database: this.configService.get('DATABASE_NAME'),
+      ...this.payload,
       entities: [
         User,
         Wallet,

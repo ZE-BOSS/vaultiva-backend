@@ -1,16 +1,17 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PaymentsService } from './payments.service';
-import { FlutterwaveService } from './services/flutterwave.service';
 import { Transaction } from '../wallet/entities/transaction.entity';
 import { WalletModule } from '../wallet/wallet.module';
+import { FlutterwaveModule } from '../flutterwave/flutterwave.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Transaction]),
-    WalletModule,
+    FlutterwaveModule,
+    forwardRef(() => WalletModule),
   ],
-  providers: [PaymentsService, FlutterwaveService],
-  exports: [PaymentsService, FlutterwaveService],
+  providers: [PaymentsService],
+  exports: [PaymentsService],
 })
 export class PaymentsModule {}

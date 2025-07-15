@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
 import { WalletService } from './wallet.service';
@@ -15,7 +15,7 @@ import { TransactionProcessor } from './processors/transaction.processor';
     BullModule.registerQueue({
       name: 'transactions',
     }),
-    PaymentsModule,
+    forwardRef(() => PaymentsModule),
     NotificationsModule,
   ],
   controllers: [WalletController],

@@ -9,12 +9,45 @@
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AppModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
@@ -25,7 +58,7 @@ const throttler_1 = __webpack_require__(/*! @nestjs/throttler */ "@nestjs/thrott
 const schedule_1 = __webpack_require__(/*! @nestjs/schedule */ "@nestjs/schedule");
 const event_emitter_1 = __webpack_require__(/*! @nestjs/event-emitter */ "@nestjs/event-emitter");
 const nest_winston_1 = __webpack_require__(/*! nest-winston */ "nest-winston");
-const winston = __webpack_require__(/*! winston */ "winston");
+const winston = __importStar(__webpack_require__(/*! winston */ "winston"));
 const database_config_1 = __webpack_require__(/*! ./config/database.config */ "./src/config/database.config.ts");
 const redis_config_1 = __webpack_require__(/*! ./config/redis.config */ "./src/config/redis.config.ts");
 const auth_module_1 = __webpack_require__(/*! @/modules/auth/auth.module */ "./src/modules/auth/auth.module.ts");
@@ -77,346 +110,14 @@ exports.AppModule = AppModule = __decorate([
             }),
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
-            wallet_module_1.WalletModule,
             bills_module_1.BillsModule,
             notifications_module_1.NotificationsModule,
             payments_module_1.PaymentsModule,
+            wallet_module_1.WalletModule,
             health_module_1.HealthModule,
         ],
     })
 ], AppModule);
-
-
-/***/ }),
-
-/***/ "./src/common/decorators/roles.decorator.ts":
-/*!**************************************************!*\
-  !*** ./src/common/decorators/roles.decorator.ts ***!
-  \**************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Roles = exports.ROLES_KEY = exports.Role = void 0;
-const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-var Role;
-(function (Role) {
-    Role["USER"] = "user";
-    Role["ADMIN"] = "admin";
-    Role["SUPER_ADMIN"] = "super_admin";
-})(Role || (exports.Role = Role = {}));
-exports.ROLES_KEY = 'roles';
-const Roles = (...roles) => (0, common_1.SetMetadata)(exports.ROLES_KEY, roles);
-exports.Roles = Roles;
-
-
-/***/ }),
-
-/***/ "./src/common/filters/all-exceptions.filter.ts":
-/*!*****************************************************!*\
-  !*** ./src/common/filters/all-exceptions.filter.ts ***!
-  \*****************************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var AllExceptionsFilter_1;
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.AllExceptionsFilter = void 0;
-const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-let AllExceptionsFilter = AllExceptionsFilter_1 = class AllExceptionsFilter {
-    constructor() {
-        this.logger = new common_1.Logger(AllExceptionsFilter_1.name);
-    }
-    catch(exception, host) {
-        const ctx = host.switchToHttp();
-        const response = ctx.getResponse();
-        const request = ctx.getRequest();
-        let status = common_1.HttpStatus.INTERNAL_SERVER_ERROR;
-        let message = 'Internal server error';
-        let error = 'Internal Server Error';
-        if (exception instanceof common_1.HttpException) {
-            status = exception.getStatus();
-            const errorResponse = exception.getResponse();
-            if (typeof errorResponse === 'object' && errorResponse !== null) {
-                message = errorResponse.message || exception.message;
-                error = errorResponse.error || error;
-            }
-            else {
-                message = errorResponse;
-            }
-        }
-        const errorDetails = {
-            statusCode: status,
-            timestamp: new Date().toISOString(),
-            path: request.url,
-            method: request.method,
-            message,
-            error,
-        };
-        this.logger.error(`${request.method} ${request.url}`, JSON.stringify(errorDetails), exception instanceof Error ? exception.stack : 'No stack trace');
-        response.status(status).json(errorDetails);
-    }
-};
-exports.AllExceptionsFilter = AllExceptionsFilter;
-exports.AllExceptionsFilter = AllExceptionsFilter = AllExceptionsFilter_1 = __decorate([
-    (0, common_1.Catch)()
-], AllExceptionsFilter);
-
-
-/***/ }),
-
-/***/ "./src/common/guards/jwt-auth.guard.ts":
-/*!*********************************************!*\
-  !*** ./src/common/guards/jwt-auth.guard.ts ***!
-  \*********************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var _a;
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.JwtAuthGuard = void 0;
-const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const passport_1 = __webpack_require__(/*! @nestjs/passport */ "@nestjs/passport");
-const core_1 = __webpack_require__(/*! @nestjs/core */ "@nestjs/core");
-let JwtAuthGuard = class JwtAuthGuard extends (0, passport_1.AuthGuard)('jwt') {
-    constructor(reflector) {
-        super();
-        this.reflector = reflector;
-    }
-    canActivate(context) {
-        const isPublic = this.reflector.getAllAndOverride('isPublic', [
-            context.getHandler(),
-            context.getClass(),
-        ]);
-        if (isPublic) {
-            return true;
-        }
-        return super.canActivate(context);
-    }
-    handleRequest(err, user, info, context) {
-        if (err || !user) {
-            throw err || new common_1.UnauthorizedException('Invalid token');
-        }
-        return user;
-    }
-};
-exports.JwtAuthGuard = JwtAuthGuard;
-exports.JwtAuthGuard = JwtAuthGuard = __decorate([
-    (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [typeof (_a = typeof core_1.Reflector !== "undefined" && core_1.Reflector) === "function" ? _a : Object])
-], JwtAuthGuard);
-
-
-/***/ }),
-
-/***/ "./src/common/guards/roles.guard.ts":
-/*!******************************************!*\
-  !*** ./src/common/guards/roles.guard.ts ***!
-  \******************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var _a;
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.RolesGuard = void 0;
-const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const core_1 = __webpack_require__(/*! @nestjs/core */ "@nestjs/core");
-const roles_decorator_1 = __webpack_require__(/*! ../decorators/roles.decorator */ "./src/common/decorators/roles.decorator.ts");
-let RolesGuard = class RolesGuard {
-    constructor(reflector) {
-        this.reflector = reflector;
-    }
-    canActivate(context) {
-        const requiredRoles = this.reflector.getAllAndOverride(roles_decorator_1.ROLES_KEY, [
-            context.getHandler(),
-            context.getClass(),
-        ]);
-        if (!requiredRoles) {
-            return true;
-        }
-        const { user } = context.switchToHttp().getRequest();
-        if (!user) {
-            return false;
-        }
-        return requiredRoles.some((role) => user.role === role);
-    }
-};
-exports.RolesGuard = RolesGuard;
-exports.RolesGuard = RolesGuard = __decorate([
-    (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [typeof (_a = typeof core_1.Reflector !== "undefined" && core_1.Reflector) === "function" ? _a : Object])
-], RolesGuard);
-
-
-/***/ }),
-
-/***/ "./src/common/interceptors/logging.interceptor.ts":
-/*!********************************************************!*\
-  !*** ./src/common/interceptors/logging.interceptor.ts ***!
-  \********************************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var LoggingInterceptor_1;
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.LoggingInterceptor = void 0;
-const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const operators_1 = __webpack_require__(/*! rxjs/operators */ "rxjs/operators");
-let LoggingInterceptor = LoggingInterceptor_1 = class LoggingInterceptor {
-    constructor() {
-        this.logger = new common_1.Logger(LoggingInterceptor_1.name);
-    }
-    intercept(context, next) {
-        const request = context.switchToHttp().getRequest();
-        const response = context.switchToHttp().getResponse();
-        const { method, url, ip, headers } = request;
-        const userAgent = headers['user-agent'] || '';
-        const now = Date.now();
-        this.logger.log(`${method} ${url} - ${ip} - ${userAgent}`);
-        return next.handle().pipe((0, operators_1.tap)(() => {
-            const { statusCode } = response;
-            const contentLength = response.get('content-length');
-            const responseTime = Date.now() - now;
-            this.logger.log(`${method} ${url} ${statusCode} ${contentLength || 0}b - ${responseTime}ms`);
-        }));
-    }
-};
-exports.LoggingInterceptor = LoggingInterceptor;
-exports.LoggingInterceptor = LoggingInterceptor = LoggingInterceptor_1 = __decorate([
-    (0, common_1.Injectable)()
-], LoggingInterceptor);
-
-
-/***/ }),
-
-/***/ "./src/common/interceptors/response.interceptor.ts":
-/*!*********************************************************!*\
-  !*** ./src/common/interceptors/response.interceptor.ts ***!
-  \*********************************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ResponseInterceptor = void 0;
-const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const operators_1 = __webpack_require__(/*! rxjs/operators */ "rxjs/operators");
-let ResponseInterceptor = class ResponseInterceptor {
-    intercept(context, next) {
-        const request = context.switchToHttp().getRequest();
-        const { method, url } = request;
-        return next.handle().pipe((0, operators_1.map)((data) => ({
-            success: true,
-            message: this.getSuccessMessage(method, url),
-            data,
-            timestamp: new Date().toISOString(),
-        })));
-    }
-    getSuccessMessage(method, url) {
-        const resource = this.extractResource(url);
-        switch (method) {
-            case 'GET':
-                return `${resource} retrieved successfully`;
-            case 'POST':
-                return `${resource} created successfully`;
-            case 'PUT':
-            case 'PATCH':
-                return `${resource} updated successfully`;
-            case 'DELETE':
-                return `${resource} deleted successfully`;
-            default:
-                return 'Operation completed successfully';
-        }
-    }
-    extractResource(url) {
-        const segments = url.split('/').filter(Boolean);
-        const resourceSegment = segments.find(segment => !segment.includes('api') &&
-            !segment.includes('v1') &&
-            !['me', 'profile'].includes(segment));
-        return resourceSegment ?
-            resourceSegment.charAt(0).toUpperCase() + resourceSegment.slice(1) :
-            'Resource';
-    }
-};
-exports.ResponseInterceptor = ResponseInterceptor;
-exports.ResponseInterceptor = ResponseInterceptor = __decorate([
-    (0, common_1.Injectable)()
-], ResponseInterceptor);
-
-
-/***/ }),
-
-/***/ "./src/common/utils/encryption.util.ts":
-/*!*********************************************!*\
-  !*** ./src/common/utils/encryption.util.ts ***!
-  \*********************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.encrypt = encrypt;
-exports.decrypt = decrypt;
-const CryptoJS = __webpack_require__(/*! crypto-js */ "crypto-js");
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'your-secret-encryption-key';
-function encrypt(text) {
-    if (!text)
-        return text;
-    try {
-        const encrypted = CryptoJS.AES.encrypt(text, ENCRYPTION_KEY).toString();
-        return encrypted;
-    }
-    catch (error) {
-        console.error('Encryption error:', error);
-        return text;
-    }
-}
-function decrypt(encryptedText) {
-    if (!encryptedText)
-        return encryptedText;
-    try {
-        const decrypted = CryptoJS.AES.decrypt(encryptedText, ENCRYPTION_KEY);
-        return decrypted.toString(CryptoJS.enc.Utf8);
-    }
-    catch (error) {
-        console.error('Decryption error:', error);
-        return encryptedText;
-    }
-}
 
 
 /***/ }),
@@ -451,15 +152,19 @@ const notification_entity_1 = __webpack_require__(/*! @/modules/notifications/en
 let DatabaseConfig = class DatabaseConfig {
     constructor(configService) {
         this.configService = configService;
+        this.DB_PREFIX = 'DB_PUBLIC';
+        this.payload = {
+            type: 'postgres',
+            host: this.configService.get(`${this.DB_PREFIX}_HOST`),
+            port: this.configService.get(`${this.DB_PREFIX}_PORT`),
+            username: this.configService.get(`${this.DB_PREFIX}_USERNAME`),
+            password: this.configService.get(`${this.DB_PREFIX}_PASSWORD`),
+            database: this.configService.get(`${this.DB_PREFIX}_NAME`),
+        };
     }
     createTypeOrmOptions() {
         return {
-            type: 'postgres',
-            host: this.configService.get('DATABASE_HOST'),
-            port: this.configService.get('DATABASE_PORT'),
-            username: this.configService.get('DATABASE_USERNAME'),
-            password: this.configService.get('DATABASE_PASSWORD'),
-            database: this.configService.get('DATABASE_NAME'),
+            ...this.payload,
             entities: [
                 user_entity_1.User,
                 wallet_entity_1.Wallet,
@@ -527,6 +232,68 @@ exports.RedisConfig = RedisConfig = __decorate([
 
 /***/ }),
 
+/***/ "./src/main.ts":
+/*!*********************!*\
+  !*** ./src/main.ts ***!
+  \*********************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const core_1 = __webpack_require__(/*! @nestjs/core */ "@nestjs/core");
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const swagger_1 = __webpack_require__(/*! @nestjs/swagger */ "@nestjs/swagger");
+const config_1 = __webpack_require__(/*! @nestjs/config */ "@nestjs/config");
+const helmet_1 = __importDefault(__webpack_require__(/*! helmet */ "helmet"));
+const compression_1 = __importDefault(__webpack_require__(/*! compression */ "compression"));
+const app_module_1 = __webpack_require__(/*! ./app.module */ "./src/app.module.ts");
+const all_exceptions_filter_1 = __webpack_require__(/*! ./modules/common/filters/all-exceptions.filter */ "./src/modules/common/filters/all-exceptions.filter.ts");
+const response_interceptor_1 = __webpack_require__(/*! ./modules/common/interceptors/response.interceptor */ "./src/modules/common/interceptors/response.interceptor.ts");
+const logging_interceptor_1 = __webpack_require__(/*! ./modules/common/interceptors/logging.interceptor */ "./src/modules/common/interceptors/logging.interceptor.ts");
+async function bootstrap() {
+    const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    const configService = app.get(config_1.ConfigService);
+    const logger = new common_1.Logger('Bootstrap');
+    app.use((0, helmet_1.default)());
+    app.use((0, compression_1.default)());
+    app.enableCors({
+        origin: process.env.NODE_ENV === 'production' ? ['https://yourapp.com'] : true,
+        credentials: true,
+    });
+    app.setGlobalPrefix(configService.get('API_PREFIX', 'api/v1'));
+    app.useGlobalPipes(new common_1.ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        transformOptions: {
+            enableImplicitConversion: true,
+        },
+    }));
+    app.useGlobalFilters(new all_exceptions_filter_1.AllExceptionsFilter());
+    app.useGlobalInterceptors(new response_interceptor_1.ResponseInterceptor(), new logging_interceptor_1.LoggingInterceptor());
+    if (process.env.NODE_ENV !== 'production') {
+        const config = new swagger_1.DocumentBuilder()
+            .setTitle('Vaultiva API')
+            .setDescription('Comprehensive Fintech APP (Vautiva) API with clean architecture')
+            .setVersion('1.0')
+            .addBearerAuth()
+            .build();
+        const document = swagger_1.SwaggerModule.createDocument(app, config);
+        swagger_1.SwaggerModule.setup('docs', app, document);
+    }
+    const port = configService.get('PORT', 3000);
+    await app.listen(port);
+    logger.log(`Application is running on: http://localhost:${port}`);
+    logger.log(`Swagger documentation: http://localhost:${port}/docs`);
+}
+bootstrap();
+
+
+/***/ }),
+
 /***/ "./src/modules/auth/auth.controller.ts":
 /*!*********************************************!*\
   !*** ./src/modules/auth/auth.controller.ts ***!
@@ -555,7 +322,7 @@ const throttler_1 = __webpack_require__(/*! @nestjs/throttler */ "@nestjs/thrott
 const auth_service_1 = __webpack_require__(/*! ./auth.service */ "./src/modules/auth/auth.service.ts");
 const create_user_dto_1 = __webpack_require__(/*! ../users/dto/create-user.dto */ "./src/modules/users/dto/create-user.dto.ts");
 const login_dto_1 = __webpack_require__(/*! ./dto/login.dto */ "./src/modules/auth/dto/login.dto.ts");
-const local_auth_guard_1 = __webpack_require__(/*! ./guards/local-auth.guard */ "./src/modules/auth/guards/local-auth.guard.ts");
+const local_auth_guard_1 = __webpack_require__(/*! ../common/guards/local-auth.guard */ "./src/modules/common/guards/local-auth.guard.ts");
 let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
@@ -624,6 +391,8 @@ const auth_controller_1 = __webpack_require__(/*! ./auth.controller */ "./src/mo
 const users_module_1 = __webpack_require__(/*! ../users/users.module */ "./src/modules/users/users.module.ts");
 const jwt_strategy_1 = __webpack_require__(/*! ./strategies/jwt.strategy */ "./src/modules/auth/strategies/jwt.strategy.ts");
 const local_strategy_1 = __webpack_require__(/*! ./strategies/local.strategy */ "./src/modules/auth/strategies/local.strategy.ts");
+const local_auth_guard_1 = __webpack_require__(/*! ../common/guards/local-auth.guard */ "./src/modules/common/guards/local-auth.guard.ts");
+const notifications_module_1 = __webpack_require__(/*! ../notifications/notifications.module */ "./src/modules/notifications/notifications.module.ts");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -632,6 +401,7 @@ exports.AuthModule = AuthModule = __decorate([
         imports: [
             users_module_1.UsersModule,
             passport_1.PassportModule,
+            notifications_module_1.NotificationsModule,
             jwt_1.JwtModule.registerAsync({
                 inject: [config_1.ConfigService],
                 useFactory: (configService) => ({
@@ -640,11 +410,11 @@ exports.AuthModule = AuthModule = __decorate([
                         expiresIn: configService.get('JWT_EXPIRES_IN', '7d'),
                     },
                 }),
-            }),
+            })
         ],
-        providers: [auth_service_1.AuthService, jwt_strategy_1.JwtStrategy, local_strategy_1.LocalStrategy],
+        providers: [auth_service_1.AuthService, jwt_strategy_1.JwtStrategy, local_strategy_1.LocalStrategy, local_auth_guard_1.LocalAuthGuard],
         controllers: [auth_controller_1.AuthController],
-        exports: [auth_service_1.AuthService],
+        exports: [auth_service_1.AuthService, local_auth_guard_1.LocalAuthGuard],
     })
 ], AuthModule);
 
@@ -658,84 +428,182 @@ exports.AuthModule = AuthModule = __decorate([
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var _a, _b;
+var _a, _b, _c;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AuthService = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const jwt_1 = __webpack_require__(/*! @nestjs/jwt */ "@nestjs/jwt");
-const bcrypt = __webpack_require__(/*! bcryptjs */ "bcryptjs");
+const bcrypt = __importStar(__webpack_require__(/*! bcryptjs */ "bcryptjs"));
 const users_service_1 = __webpack_require__(/*! ../users/users.service */ "./src/modules/users/users.service.ts");
+const notifications_service_1 = __webpack_require__(/*! ../notifications/notifications.service */ "./src/modules/notifications/notifications.service.ts");
 let AuthService = class AuthService {
-    constructor(usersService, jwtService) {
+    constructor(usersService, jwtService, sendCodeService) {
         this.usersService = usersService;
         this.jwtService = jwtService;
+        this.sendCodeService = sendCodeService;
     }
     async register(createUserDto) {
-        const existingUser = await this.usersService.findByEmail(createUserDto.email);
+        const { email, phone } = createUserDto;
+        const existingUser = await this.usersService.findByEmailOrPhone(email, phone);
         if (existingUser) {
-            throw new common_1.ConflictException('User with this email already exists');
+            throw new common_1.ConflictException('User with this email or phone already exists');
         }
-        const hashedPassword = await bcrypt.hash(createUserDto.password, 12);
-        const user = await this.usersService.create({
-            ...createUserDto,
-            password: hashedPassword,
-        });
-        const { password, ...result } = user;
-        const token = this.generateToken(user);
-        return {
-            user: result,
-            token,
-        };
+        const contact = email || phone;
+        const type = this.getContactType(contact);
+        const code = this.generateCode();
+        await this.sendCodeService.sendVerificationCode(contact, code, type);
+        await this.usersService.storeVerificationCode(contact, type, 'register', code);
+        return { message: 'Verification code sent' };
     }
-    async login(loginDto) {
-        const user = await this.validateUser(loginDto.email, loginDto.password);
-        if (!user) {
+    async resendCode(createUserDto) {
+        const { email, phone } = createUserDto;
+        const contact = email || phone;
+        const type = this.getContactType(contact);
+        const user = await this.usersService.findByEmailOrPhone(email, phone);
+        if (!user)
+            throw new common_1.NotFoundException('User with this email or phone does not exist');
+        const code = this.generateCode();
+        await this.sendCodeService.sendVerificationCode(contact, code, type);
+        await this.usersService.storeVerificationCode(contact, type, 'resend', code);
+        return { message: 'Verification code sent' };
+    }
+    async verifyCode(contact, code) {
+        const type = this.getContactType(contact);
+        const isValid = await this.usersService.verifyCode(contact, type, code);
+        if (isValid === null)
+            throw new common_1.BadRequestException('Verification code expired');
+        if (!isValid)
+            throw new common_1.BadRequestException('Invalid verification code');
+        return { message: 'Verification successful' };
+    }
+    async completeProfile(contact, data) {
+        const user = await this.usersService.findByEmailOrPhone(contact, contact);
+        if (!user)
+            throw new common_1.NotFoundException('User not found');
+        return this.usersService.updateUser(user.id, data);
+    }
+    async updatePassword(userId, newPassword) {
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
+        return this.usersService.updateUser(userId, { password: hashedPassword });
+    }
+    async login({ identifier, password }) {
+        const user = await this.usersService.findByEmailOrPhone(identifier, identifier);
+        if (!user || !(await bcrypt.compare(password, user.password))) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
         const token = this.generateToken(user);
-        const { password, ...result } = user;
-        return {
-            user: result,
-            token,
-        };
+        const { password: _, ...result } = user;
+        return { user: result, token };
     }
-    async validateUser(email, password) {
-        const user = await this.usersService.findByEmail(email);
+    async validateUser(identifier, password) {
+        const user = await this.usersService.findByEmailOrPhone(identifier, identifier);
         if (user && await bcrypt.compare(password, user.password)) {
-            return user;
+            const { password: _, ...result } = user;
+            return result;
         }
         return null;
     }
+    async initiateResetPassword(identifier) {
+        const type = this.getContactType(identifier);
+        const user = await this.usersService.findByEmailOrPhone(identifier, identifier);
+        if (!user)
+            throw new common_1.NotFoundException('User not found');
+        const code = this.generateCode();
+        await this.usersService.storeVerificationCode(identifier, type, 'reset-password', code);
+        await this.sendCodeService.sendVerificationCode(identifier, code, type);
+        return { message: 'Verification code sent' };
+    }
+    async resetPassword(identifier, code, newPassword) {
+        const type = this.getContactType(identifier);
+        const isValid = await this.usersService.verifyCode(identifier, type, code);
+        if (!isValid)
+            throw new common_1.BadRequestException('Invalid or expired verification code');
+        const user = await this.usersService.findByEmailOrPhone(identifier, identifier);
+        if (!user)
+            throw new common_1.NotFoundException('User not found');
+        return this.updatePassword(user.id, newPassword);
+    }
+    async setPin(userId, pin) {
+        const hashedPin = await bcrypt.hash(pin, 10);
+        return this.usersService.updateUser(userId, { pin: hashedPin });
+    }
+    async verifyPin(userId, pin) {
+        const user = await this.usersService.findById(userId);
+        if (!user || !user.pin || !(await bcrypt.compare(pin, user.pin))) {
+            throw new common_1.UnauthorizedException('Invalid pin');
+        }
+        return { message: 'Pin verified' };
+    }
+    async updatePin(userId, oldPin, newPin) {
+        await this.verifyPin(userId, oldPin);
+        return this.setPin(userId, newPin);
+    }
     generateToken(user) {
-        const payload = {
-            sub: user.id,
-            email: user.email,
-            role: user.role,
-        };
+        const payload = { sub: user.id, email: user.email, role: user.role };
         return this.jwtService.sign(payload);
+    }
+    generateCode() {
+        return Math.floor(100000 + Math.random() * 900000).toString();
     }
     async verifyToken(token) {
         try {
             return this.jwtService.verify(token);
         }
-        catch (error) {
+        catch {
             throw new common_1.UnauthorizedException('Invalid token');
         }
+    }
+    getContactType(identifier) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(identifier) ? 'email' : 'phone';
     }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [typeof (_a = typeof users_service_1.UsersService !== "undefined" && users_service_1.UsersService) === "function" ? _a : Object, typeof (_b = typeof jwt_1.JwtService !== "undefined" && jwt_1.JwtService) === "function" ? _b : Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof users_service_1.UsersService !== "undefined" && users_service_1.UsersService) === "function" ? _a : Object, typeof (_b = typeof jwt_1.JwtService !== "undefined" && jwt_1.JwtService) === "function" ? _b : Object, typeof (_c = typeof notifications_service_1.NotificationsService !== "undefined" && notifications_service_1.NotificationsService) === "function" ? _c : Object])
 ], AuthService);
 
 
@@ -765,11 +633,11 @@ class LoginDto {
 }
 exports.LoginDto = LoginDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'user@example.com' }),
-    (0, class_validator_1.IsEmail)(),
+    (0, swagger_1.ApiProperty)({ example: 'user@example.com or 08012345678' }),
+    (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
-], LoginDto.prototype, "email", void 0);
+], LoginDto.prototype, "identifier", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ example: 'password123' }),
     (0, class_validator_1.IsString)(),
@@ -777,33 +645,6 @@ __decorate([
     (0, class_validator_1.MinLength)(6),
     __metadata("design:type", String)
 ], LoginDto.prototype, "password", void 0);
-
-
-/***/ }),
-
-/***/ "./src/modules/auth/guards/local-auth.guard.ts":
-/*!*****************************************************!*\
-  !*** ./src/modules/auth/guards/local-auth.guard.ts ***!
-  \*****************************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.LocalAuthGuard = void 0;
-const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const passport_1 = __webpack_require__(/*! @nestjs/passport */ "@nestjs/passport");
-let LocalAuthGuard = class LocalAuthGuard extends (0, passport_1.AuthGuard)('local') {
-};
-exports.LocalAuthGuard = LocalAuthGuard;
-exports.LocalAuthGuard = LocalAuthGuard = __decorate([
-    (0, common_1.Injectable)()
-], LocalAuthGuard);
 
 
 /***/ }),
@@ -885,12 +726,12 @@ const auth_service_1 = __webpack_require__(/*! ../auth.service */ "./src/modules
 let LocalStrategy = class LocalStrategy extends (0, passport_1.PassportStrategy)(passport_local_1.Strategy) {
     constructor(authService) {
         super({
-            usernameField: 'email',
+            usernameField: 'identifier',
         });
         this.authService = authService;
     }
-    async validate(email, password) {
-        const user = await this.authService.validateUser(email, password);
+    async validate(identifier, password) {
+        const user = await this.authService.validateUser(identifier, password);
         if (!user) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
@@ -932,7 +773,7 @@ const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const swagger_1 = __webpack_require__(/*! @nestjs/swagger */ "@nestjs/swagger");
 const bills_service_1 = __webpack_require__(/*! ./bills.service */ "./src/modules/bills/bills.service.ts");
 const bill_entity_1 = __webpack_require__(/*! ./entities/bill.entity */ "./src/modules/bills/entities/bill.entity.ts");
-const jwt_auth_guard_1 = __webpack_require__(/*! ../../common/guards/jwt-auth.guard */ "./src/common/guards/jwt-auth.guard.ts");
+const jwt_auth_guard_1 = __webpack_require__(/*! ../common/guards/jwt-auth.guard */ "./src/modules/common/guards/jwt-auth.guard.ts");
 let BillsController = class BillsController {
     constructor(billsService) {
         this.billsService = billsService;
@@ -1309,6 +1150,564 @@ exports.Bill = Bill = __decorate([
 
 /***/ }),
 
+/***/ "./src/modules/common/decorators/roles.decorator.ts":
+/*!**********************************************************!*\
+  !*** ./src/modules/common/decorators/roles.decorator.ts ***!
+  \**********************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Roles = exports.ROLES_KEY = exports.Role = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+var Role;
+(function (Role) {
+    Role["USER"] = "user";
+    Role["ADMIN"] = "admin";
+    Role["SUPER_ADMIN"] = "super_admin";
+})(Role || (exports.Role = Role = {}));
+exports.ROLES_KEY = 'roles';
+const Roles = (...roles) => (0, common_1.SetMetadata)(exports.ROLES_KEY, roles);
+exports.Roles = Roles;
+
+
+/***/ }),
+
+/***/ "./src/modules/common/filters/all-exceptions.filter.ts":
+/*!*************************************************************!*\
+  !*** ./src/modules/common/filters/all-exceptions.filter.ts ***!
+  \*************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var AllExceptionsFilter_1;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AllExceptionsFilter = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+let AllExceptionsFilter = AllExceptionsFilter_1 = class AllExceptionsFilter {
+    constructor() {
+        this.logger = new common_1.Logger(AllExceptionsFilter_1.name);
+    }
+    catch(exception, host) {
+        const ctx = host.switchToHttp();
+        const response = ctx.getResponse();
+        const request = ctx.getRequest();
+        let status = common_1.HttpStatus.INTERNAL_SERVER_ERROR;
+        let message = 'Internal server error';
+        let error = 'Internal Server Error';
+        if (exception instanceof common_1.HttpException) {
+            status = exception.getStatus();
+            const errorResponse = exception.getResponse();
+            if (typeof errorResponse === 'object' && errorResponse !== null) {
+                message = errorResponse.message || exception.message;
+                error = errorResponse.error || error;
+            }
+            else {
+                message = errorResponse;
+            }
+        }
+        const errorDetails = {
+            statusCode: status,
+            timestamp: new Date().toISOString(),
+            path: request.url,
+            method: request.method,
+            message,
+            error,
+        };
+        this.logger.error(`${request.method} ${request.url}`, JSON.stringify(errorDetails), exception instanceof Error ? exception.stack : 'No stack trace');
+        response.status(status).json(errorDetails);
+    }
+};
+exports.AllExceptionsFilter = AllExceptionsFilter;
+exports.AllExceptionsFilter = AllExceptionsFilter = AllExceptionsFilter_1 = __decorate([
+    (0, common_1.Catch)()
+], AllExceptionsFilter);
+
+
+/***/ }),
+
+/***/ "./src/modules/common/guards/jwt-auth.guard.ts":
+/*!*****************************************************!*\
+  !*** ./src/modules/common/guards/jwt-auth.guard.ts ***!
+  \*****************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.JwtAuthGuard = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const passport_1 = __webpack_require__(/*! @nestjs/passport */ "@nestjs/passport");
+const core_1 = __webpack_require__(/*! @nestjs/core */ "@nestjs/core");
+let JwtAuthGuard = class JwtAuthGuard extends (0, passport_1.AuthGuard)('jwt') {
+    constructor(reflector) {
+        super();
+        this.reflector = reflector;
+    }
+    canActivate(context) {
+        const isPublic = this.reflector.getAllAndOverride('isPublic', [
+            context.getHandler(),
+            context.getClass(),
+        ]);
+        if (isPublic) {
+            return true;
+        }
+        return super.canActivate(context);
+    }
+    handleRequest(err, user, info, context) {
+        if (err || !user) {
+            throw err || new common_1.UnauthorizedException('Invalid token');
+        }
+        return user;
+    }
+};
+exports.JwtAuthGuard = JwtAuthGuard;
+exports.JwtAuthGuard = JwtAuthGuard = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof core_1.Reflector !== "undefined" && core_1.Reflector) === "function" ? _a : Object])
+], JwtAuthGuard);
+
+
+/***/ }),
+
+/***/ "./src/modules/common/guards/local-auth.guard.ts":
+/*!*******************************************************!*\
+  !*** ./src/modules/common/guards/local-auth.guard.ts ***!
+  \*******************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.LocalAuthGuard = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const passport_1 = __webpack_require__(/*! @nestjs/passport */ "@nestjs/passport");
+let LocalAuthGuard = class LocalAuthGuard extends (0, passport_1.AuthGuard)('local') {
+};
+exports.LocalAuthGuard = LocalAuthGuard;
+exports.LocalAuthGuard = LocalAuthGuard = __decorate([
+    (0, common_1.Injectable)()
+], LocalAuthGuard);
+
+
+/***/ }),
+
+/***/ "./src/modules/common/guards/roles.guard.ts":
+/*!**************************************************!*\
+  !*** ./src/modules/common/guards/roles.guard.ts ***!
+  \**************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RolesGuard = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const core_1 = __webpack_require__(/*! @nestjs/core */ "@nestjs/core");
+const roles_decorator_1 = __webpack_require__(/*! ../decorators/roles.decorator */ "./src/modules/common/decorators/roles.decorator.ts");
+let RolesGuard = class RolesGuard {
+    constructor(reflector) {
+        this.reflector = reflector;
+    }
+    canActivate(context) {
+        const requiredRoles = this.reflector.getAllAndOverride(roles_decorator_1.ROLES_KEY, [
+            context.getHandler(),
+            context.getClass(),
+        ]);
+        if (!requiredRoles) {
+            return true;
+        }
+        const { user } = context.switchToHttp().getRequest();
+        if (!user) {
+            return false;
+        }
+        return requiredRoles.some((role) => user.role === role);
+    }
+};
+exports.RolesGuard = RolesGuard;
+exports.RolesGuard = RolesGuard = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof core_1.Reflector !== "undefined" && core_1.Reflector) === "function" ? _a : Object])
+], RolesGuard);
+
+
+/***/ }),
+
+/***/ "./src/modules/common/interceptors/logging.interceptor.ts":
+/*!****************************************************************!*\
+  !*** ./src/modules/common/interceptors/logging.interceptor.ts ***!
+  \****************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var LoggingInterceptor_1;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.LoggingInterceptor = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const operators_1 = __webpack_require__(/*! rxjs/operators */ "rxjs/operators");
+let LoggingInterceptor = LoggingInterceptor_1 = class LoggingInterceptor {
+    constructor() {
+        this.logger = new common_1.Logger(LoggingInterceptor_1.name);
+    }
+    intercept(context, next) {
+        const request = context.switchToHttp().getRequest();
+        const response = context.switchToHttp().getResponse();
+        const { method, url, ip, headers } = request;
+        const userAgent = headers['user-agent'] || '';
+        const now = Date.now();
+        this.logger.log(`${method} ${url} - ${ip} - ${userAgent}`);
+        return next.handle().pipe((0, operators_1.tap)(() => {
+            const { statusCode } = response;
+            const contentLength = response.get('content-length');
+            const responseTime = Date.now() - now;
+            this.logger.log(`${method} ${url} ${statusCode} ${contentLength || 0}b - ${responseTime}ms`);
+        }));
+    }
+};
+exports.LoggingInterceptor = LoggingInterceptor;
+exports.LoggingInterceptor = LoggingInterceptor = LoggingInterceptor_1 = __decorate([
+    (0, common_1.Injectable)()
+], LoggingInterceptor);
+
+
+/***/ }),
+
+/***/ "./src/modules/common/interceptors/response.interceptor.ts":
+/*!*****************************************************************!*\
+  !*** ./src/modules/common/interceptors/response.interceptor.ts ***!
+  \*****************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ResponseInterceptor = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const operators_1 = __webpack_require__(/*! rxjs/operators */ "rxjs/operators");
+let ResponseInterceptor = class ResponseInterceptor {
+    intercept(context, next) {
+        const request = context.switchToHttp().getRequest();
+        const { method, url } = request;
+        return next.handle().pipe((0, operators_1.map)((data) => ({
+            success: true,
+            message: this.getSuccessMessage(method, url),
+            data,
+            timestamp: new Date().toISOString(),
+        })));
+    }
+    getSuccessMessage(method, url) {
+        const resource = this.extractResource(url);
+        switch (method) {
+            case 'GET':
+                return `${resource} retrieved successfully`;
+            case 'POST':
+                return `${resource} created successfully`;
+            case 'PUT':
+            case 'PATCH':
+                return `${resource} updated successfully`;
+            case 'DELETE':
+                return `${resource} deleted successfully`;
+            default:
+                return 'Operation completed successfully';
+        }
+    }
+    extractResource(url) {
+        const segments = url.split('/').filter(Boolean);
+        const resourceSegment = segments.find(segment => !segment.includes('api') &&
+            !segment.includes('v1') &&
+            !['me', 'profile'].includes(segment));
+        return resourceSegment ?
+            resourceSegment.charAt(0).toUpperCase() + resourceSegment.slice(1) :
+            'Resource';
+    }
+};
+exports.ResponseInterceptor = ResponseInterceptor;
+exports.ResponseInterceptor = ResponseInterceptor = __decorate([
+    (0, common_1.Injectable)()
+], ResponseInterceptor);
+
+
+/***/ }),
+
+/***/ "./src/modules/common/utils/encryption.util.ts":
+/*!*****************************************************!*\
+  !*** ./src/modules/common/utils/encryption.util.ts ***!
+  \*****************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.EncryptionUtil = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const CryptoJS = __importStar(__webpack_require__(/*! crypto-js */ "crypto-js"));
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'your-secret-encryption-key';
+let EncryptionUtil = class EncryptionUtil {
+    encrypt(text) {
+        if (!text)
+            return text;
+        try {
+            return CryptoJS.AES.encrypt(text, ENCRYPTION_KEY).toString();
+        }
+        catch (error) {
+            console.error('Encryption error:', error);
+            return text;
+        }
+    }
+    decrypt(encryptedText) {
+        if (!encryptedText)
+            return encryptedText;
+        try {
+            const decrypted = CryptoJS.AES.decrypt(encryptedText, ENCRYPTION_KEY);
+            return decrypted.toString(CryptoJS.enc.Utf8);
+        }
+        catch (error) {
+            console.error('Decryption error:', error);
+            return encryptedText;
+        }
+    }
+};
+exports.EncryptionUtil = EncryptionUtil;
+exports.EncryptionUtil = EncryptionUtil = __decorate([
+    (0, common_1.Injectable)()
+], EncryptionUtil);
+
+
+/***/ }),
+
+/***/ "./src/modules/flutterwave/flutterwave.module.ts":
+/*!*******************************************************!*\
+  !*** ./src/modules/flutterwave/flutterwave.module.ts ***!
+  \*******************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.FlutterwaveModule = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const flutterwave_service_1 = __webpack_require__(/*! ./flutterwave.service */ "./src/modules/flutterwave/flutterwave.service.ts");
+const axios_1 = __webpack_require__(/*! @nestjs/axios */ "@nestjs/axios");
+let FlutterwaveModule = class FlutterwaveModule {
+};
+exports.FlutterwaveModule = FlutterwaveModule;
+exports.FlutterwaveModule = FlutterwaveModule = __decorate([
+    (0, common_1.Module)({
+        imports: [axios_1.HttpModule],
+        providers: [flutterwave_service_1.FlutterwaveService],
+        exports: [flutterwave_service_1.FlutterwaveService],
+    })
+], FlutterwaveModule);
+
+
+/***/ }),
+
+/***/ "./src/modules/flutterwave/flutterwave.service.ts":
+/*!********************************************************!*\
+  !*** ./src/modules/flutterwave/flutterwave.service.ts ***!
+  \********************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.FlutterwaveService = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const config_1 = __webpack_require__(/*! @nestjs/config */ "@nestjs/config");
+const flutterwave_node_v3_1 = __importDefault(__webpack_require__(/*! flutterwave-node-v3 */ "flutterwave-node-v3"));
+let FlutterwaveService = class FlutterwaveService {
+    constructor(configService) {
+        this.configService = configService;
+        this.flw = new flutterwave_node_v3_1.default(configService.get('FLUTTERWAVE_PUBLIC_KEY'), configService.get('FLUTTERWAVE_SECRET_KEY'));
+    }
+    async initializePayment(data) {
+        const payload = {
+            tx_ref: data.reference,
+            amount: data.amount,
+            currency: 'NGN',
+            redirect_url: process.env.FLW_REDIRECT_URL,
+            payment_options: 'card,banktransfer',
+            customer: {
+                email: data.email,
+            },
+            customizations: {
+                title: 'Wallet Funding',
+                description: 'Fund your wallet',
+            },
+            meta: data.metadata || {},
+        };
+        const response = await this.flw.Payment.initialize(payload);
+        return response.data;
+    }
+    async getBillCategories() {
+        const resp = await this.flw.Bills.fetch_bills();
+        if (resp.status !== 'success' || !resp.data) {
+            throw new common_1.BadRequestException(resp.message);
+        }
+        return resp.data;
+    }
+    async verifyPayment(transactionId) {
+        const resp = await this.flw.Transaction.verify({ id: transactionId });
+        if (resp.status !== 'success' || !resp.data) {
+            throw new common_1.BadRequestException(resp.message);
+        }
+        return resp.data;
+    }
+    async validateBillService(billType, billerCode, customer) {
+        const resp = await this.flw.Bills.validate({ item_code: billType, biller_code: billerCode, customer });
+        if (resp.status !== 'success' || !resp.data) {
+            throw new common_1.BadRequestException(resp.message);
+        }
+        return resp.data;
+    }
+    async initiateTransfer(payload) {
+        const resp = await this.flw.Transfer.initiate(payload);
+        if (resp.status !== 'success' || !resp.data) {
+            throw new common_1.BadRequestException(resp.message);
+        }
+        return resp.data;
+    }
+    async createVirtualAccount(input) {
+        const resp = await this.flw.VirtualAcct.create({
+            ...input,
+            is_permanent: true,
+            bvn: '12345678901',
+            tx_ref: `VA_${Date.now()}`,
+            firstname: input.firstName,
+            lastname: input.lastName,
+            phonenumber: input.phone,
+        });
+        if (resp.status !== 'success' || !resp.data) {
+            throw new common_1.BadRequestException(resp.message);
+        }
+        return resp.data;
+    }
+    async payBill(payload) {
+        const resp = await this.flw.Bills.create_bill(payload);
+        if (resp.status !== 'success' || !resp.data) {
+            throw new common_1.BadRequestException(resp.message);
+        }
+        return resp.data;
+    }
+    async getBanks(country = 'NG') {
+        const resp = await this.flw.Bank.country({ country });
+        if (resp.status !== 'success' || !resp.data) {
+            throw new common_1.BadRequestException(resp.message);
+        }
+        return resp.data;
+    }
+    async resolveAccountNumber(account_number, account_bank) {
+        const resp = await this.flw.Misc.verify_Account({ account_number, account_bank });
+        if (resp.status !== 'success' || !resp.data) {
+            throw new common_1.BadRequestException(resp.message);
+        }
+        return resp.data;
+    }
+};
+exports.FlutterwaveService = FlutterwaveService;
+exports.FlutterwaveService = FlutterwaveService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _a : Object])
+], FlutterwaveService);
+
+
+/***/ }),
+
 /***/ "./src/modules/health/health.controller.ts":
 /*!*************************************************!*\
   !*** ./src/modules/health/health.controller.ts ***!
@@ -1601,7 +2000,7 @@ exports.NotificationsController = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const swagger_1 = __webpack_require__(/*! @nestjs/swagger */ "@nestjs/swagger");
 const notifications_service_1 = __webpack_require__(/*! ./notifications.service */ "./src/modules/notifications/notifications.service.ts");
-const jwt_auth_guard_1 = __webpack_require__(/*! ../../common/guards/jwt-auth.guard */ "./src/common/guards/jwt-auth.guard.ts");
+const jwt_auth_guard_1 = __webpack_require__(/*! ../common/guards/jwt-auth.guard */ "./src/modules/common/guards/jwt-auth.guard.ts");
 let NotificationsController = class NotificationsController {
     constructor(notificationsService) {
         this.notificationsService = notificationsService;
@@ -1705,12 +2104,16 @@ const typeorm_1 = __webpack_require__(/*! @nestjs/typeorm */ "@nestjs/typeorm");
 const notifications_service_1 = __webpack_require__(/*! ./notifications.service */ "./src/modules/notifications/notifications.service.ts");
 const notifications_controller_1 = __webpack_require__(/*! ./notifications.controller */ "./src/modules/notifications/notifications.controller.ts");
 const notification_entity_1 = __webpack_require__(/*! ./entities/notification.entity */ "./src/modules/notifications/entities/notification.entity.ts");
+const axios_1 = __webpack_require__(/*! @nestjs/axios */ "@nestjs/axios");
 let NotificationsModule = class NotificationsModule {
 };
 exports.NotificationsModule = NotificationsModule;
 exports.NotificationsModule = NotificationsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([notification_entity_1.Notification])],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([notification_entity_1.Notification]),
+            axios_1.HttpModule
+        ],
         controllers: [notifications_controller_1.NotificationsController],
         providers: [notifications_service_1.NotificationsService],
         exports: [notifications_service_1.NotificationsService],
@@ -1739,23 +2142,98 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a;
+var NotificationsService_1;
+var _a, _b, _c;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NotificationsService = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const typeorm_1 = __webpack_require__(/*! @nestjs/typeorm */ "@nestjs/typeorm");
 const typeorm_2 = __webpack_require__(/*! typeorm */ "typeorm");
 const notification_entity_1 = __webpack_require__(/*! ./entities/notification.entity */ "./src/modules/notifications/entities/notification.entity.ts");
-let NotificationsService = class NotificationsService {
-    constructor(notificationRepository) {
-        this.notificationRepository = notificationRepository;
+const axios_1 = __webpack_require__(/*! @nestjs/axios */ "@nestjs/axios");
+const rxjs_1 = __webpack_require__(/*! rxjs */ "rxjs");
+const config_1 = __webpack_require__(/*! @nestjs/config */ "@nestjs/config");
+const twilio_1 = __webpack_require__(/*! twilio */ "twilio");
+let NotificationsService = NotificationsService_1 = class NotificationsService {
+    constructor(notificationRepo, httpService, configService) {
+        this.notificationRepo = notificationRepo;
+        this.httpService = httpService;
+        this.configService = configService;
+        this.logger = new common_1.Logger(NotificationsService_1.name);
+        this.twilioClient = new twilio_1.Twilio(this.configService.get('TWILIO_ACCOUNT_SID'), this.configService.get('TWILIO_AUTH_TOKEN'));
     }
-    async create(createNotificationDto) {
-        const notification = this.notificationRepository.create(createNotificationDto);
-        return this.notificationRepository.save(notification);
+    async sendVerificationCode(recipient, code, type) {
+        if (type == "email") {
+            return this.sendEmail(recipient, code);
+        }
+        else if (type == "phone") {
+            await this.sendSms(recipient, code);
+            await this.sendWhatsApp(recipient, code);
+            return;
+        }
+        throw new Error('Invalid recipient type');
+    }
+    async sendEmail(email, code) {
+        const zeptoApiKey = this.configService.get('ZEPTO_API_KEY');
+        const zeptoFrom = this.configService.get('ZEPTO_FROM');
+        const payload = {
+            from: { address: zeptoFrom, name: 'SwiftBank' },
+            to: [{ email }],
+            subject: 'Your Verification Code',
+            htmlbody: `<p>Your SwiftBank verification code is <b>${code}</b>.</p>`,
+        };
+        const headers = {
+            'Content-Type': 'application/json',
+            'accept': 'application/json',
+            'X-API-KEY': zeptoApiKey,
+        };
+        try {
+            await (0, rxjs_1.firstValueFrom)(this.httpService.post('https://api.zeptomail.com/v1.1/email', payload, { headers }));
+            this.logger.log(`Verification code sent to email: ${email}`);
+        }
+        catch (error) {
+            this.logger.error('Failed to send email:', error?.response?.data || error.message);
+            throw error;
+        }
+    }
+    async sendSms(phone, code) {
+        try {
+            await this.twilioClient.messages.create({
+                body: `Your SwiftBank verification code is ${code}`,
+                to: phone,
+                from: this.configService.get('TWILIO_SMS_FROM'),
+            });
+            this.logger.log(`SMS sent to ${phone}`);
+        }
+        catch (error) {
+            this.logger.error('Failed to send SMS:', error.message);
+            throw error;
+        }
+    }
+    async sendWhatsApp(phone, code) {
+        const formatted = phone.startsWith('+') ? phone : `+${phone}`;
+        try {
+            await this.twilioClient.messages.create({
+                body: `Your SwiftBank WhatsApp verification code is ${code}`,
+                to: `whatsapp:${formatted}`,
+                from: this.configService.get('TWILIO_WHATSAPP_FROM'),
+            });
+            this.logger.log(`WhatsApp message sent to ${formatted}`);
+        }
+        catch (error) {
+            this.logger.error('Failed to send WhatsApp:', error.message);
+            throw error;
+        }
+    }
+    async create(createDto) {
+        const notification = this.notificationRepo.create(createDto);
+        return await this.notificationRepo.save(notification);
     }
     async findUserNotifications(userId, page = 1, limit = 20) {
-        const [notifications, total] = await this.notificationRepository.findAndCount({
+        if (page < 1 || limit < 1) {
+            throw new common_1.BadRequestException('Page and limit must be positive integers');
+        }
+        const [notifications, total] = await this.notificationRepo.findAndCount({
             where: { userId },
             order: { createdAt: 'DESC' },
             skip: (page - 1) * limit,
@@ -1772,35 +2250,35 @@ let NotificationsService = class NotificationsService {
         };
     }
     async markAsRead(id, userId) {
-        const notification = await this.notificationRepository.findOne({
+        const notification = await this.notificationRepo.findOne({
             where: { id, userId },
         });
         if (!notification) {
             throw new common_1.NotFoundException('Notification not found');
         }
         notification.isRead = true;
-        return this.notificationRepository.save(notification);
+        return await this.notificationRepo.save(notification);
     }
     async markAllAsRead(userId) {
-        await this.notificationRepository.update({ userId, isRead: false }, { isRead: true });
+        await this.notificationRepo.update({ userId, isRead: false }, { isRead: true });
     }
     async getUnreadCount(userId) {
-        return this.notificationRepository.count({
+        return await this.notificationRepo.count({
             where: { userId, isRead: false },
         });
     }
     async deleteNotification(id, userId) {
-        const result = await this.notificationRepository.delete({ id, userId });
+        const result = await this.notificationRepo.delete({ id, userId });
         if (result.affected === 0) {
             throw new common_1.NotFoundException('Notification not found');
         }
     }
 };
 exports.NotificationsService = NotificationsService;
-exports.NotificationsService = NotificationsService = __decorate([
+exports.NotificationsService = NotificationsService = NotificationsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(notification_entity_1.Notification)),
-    __metadata("design:paramtypes", [typeof (_a = typeof typeorm_2.Repository !== "undefined" && typeorm_2.Repository) === "function" ? _a : Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof typeorm_2.Repository !== "undefined" && typeorm_2.Repository) === "function" ? _a : Object, typeof (_b = typeof axios_1.HttpService !== "undefined" && axios_1.HttpService) === "function" ? _b : Object, typeof (_c = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _c : Object])
 ], NotificationsService);
 
 
@@ -1824,9 +2302,9 @@ exports.PaymentsModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const typeorm_1 = __webpack_require__(/*! @nestjs/typeorm */ "@nestjs/typeorm");
 const payments_service_1 = __webpack_require__(/*! ./payments.service */ "./src/modules/payments/payments.service.ts");
-const flutterwave_service_1 = __webpack_require__(/*! ./services/flutterwave.service */ "./src/modules/payments/services/flutterwave.service.ts");
 const transaction_entity_1 = __webpack_require__(/*! ../wallet/entities/transaction.entity */ "./src/modules/wallet/entities/transaction.entity.ts");
 const wallet_module_1 = __webpack_require__(/*! ../wallet/wallet.module */ "./src/modules/wallet/wallet.module.ts");
+const flutterwave_module_1 = __webpack_require__(/*! ../flutterwave/flutterwave.module */ "./src/modules/flutterwave/flutterwave.module.ts");
 let PaymentsModule = class PaymentsModule {
 };
 exports.PaymentsModule = PaymentsModule;
@@ -1834,10 +2312,11 @@ exports.PaymentsModule = PaymentsModule = __decorate([
     (0, common_1.Module)({
         imports: [
             typeorm_1.TypeOrmModule.forFeature([transaction_entity_1.Transaction]),
-            wallet_module_1.WalletModule,
+            flutterwave_module_1.FlutterwaveModule,
+            (0, common_1.forwardRef)(() => wallet_module_1.WalletModule),
         ],
-        providers: [payments_service_1.PaymentsService, flutterwave_service_1.FlutterwaveService],
-        exports: [payments_service_1.PaymentsService, flutterwave_service_1.FlutterwaveService],
+        providers: [payments_service_1.PaymentsService],
+        exports: [payments_service_1.PaymentsService],
     })
 ], PaymentsModule);
 
@@ -1851,12 +2330,45 @@ exports.PaymentsModule = PaymentsModule = __decorate([
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
@@ -1870,10 +2382,11 @@ const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const typeorm_1 = __webpack_require__(/*! @nestjs/typeorm */ "@nestjs/typeorm");
 const typeorm_2 = __webpack_require__(/*! typeorm */ "typeorm");
 const event_emitter_1 = __webpack_require__(/*! @nestjs/event-emitter */ "@nestjs/event-emitter");
-const flutterwave_service_1 = __webpack_require__(/*! ./services/flutterwave.service */ "./src/modules/payments/services/flutterwave.service.ts");
+const flutterwave_service_1 = __webpack_require__(/*! ../flutterwave/flutterwave.service */ "./src/modules/flutterwave/flutterwave.service.ts");
 const wallet_service_1 = __webpack_require__(/*! ../wallet/wallet.service */ "./src/modules/wallet/wallet.service.ts");
 const transaction_entity_1 = __webpack_require__(/*! ../wallet/entities/transaction.entity */ "./src/modules/wallet/entities/transaction.entity.ts");
-const crypto = __webpack_require__(/*! crypto */ "crypto");
+const wallet_entity_1 = __webpack_require__(/*! ../wallet/entities/wallet.entity */ "./src/modules/wallet/entities/wallet.entity.ts");
+const crypto = __importStar(__webpack_require__(/*! crypto */ "crypto"));
 let PaymentsService = class PaymentsService {
     constructor(transactionRepository, flutterwaveService, walletService, eventEmitter) {
         this.transactionRepository = transactionRepository;
@@ -1881,12 +2394,25 @@ let PaymentsService = class PaymentsService {
         this.walletService = walletService;
         this.eventEmitter = eventEmitter;
     }
+    async initializePayment(data) {
+        try {
+            const response = await this.flutterwaveService.initializePayment(data);
+            return response;
+        }
+        catch (error) {
+            throw new common_1.BadRequestException(error.message || 'Payment initialization failed');
+        }
+    }
     async getBillCategories() {
         return this.flutterwaveService.getBillCategories();
     }
     async payBill(userId, billData) {
-        const wallet = await this.walletService.findByUserId(userId);
-        if (wallet.availableBalance < billData.amount) {
+        const wallets = await this.walletService.findUserWallets(userId);
+        if (!wallets || wallets.length === 0) {
+            throw new common_1.NotFoundException('Wallet not found for user');
+        }
+        const wallet = wallets.find(w => w.type === wallet_entity_1.WalletType.BILL_PAYMENT);
+        if (wallet.balance < billData.amount) {
             throw new common_1.BadRequestException('Insufficient wallet balance');
         }
         const reference = this.generateReference('BILL');
@@ -1914,7 +2440,7 @@ let PaymentsService = class PaymentsService {
             });
             await this.deductFromWallet(wallet.id, billData.amount);
             savedTransaction.status = transaction_entity_1.TransactionStatus.COMPLETED;
-            savedTransaction.providerReference = paymentResponse.reference;
+            savedTransaction.providerReference = paymentResponse.tx_ref;
             await this.transactionRepository.save(savedTransaction);
             this.eventEmitter.emit('bill.paid', { transaction: savedTransaction });
             return savedTransaction;
@@ -1973,7 +2499,7 @@ let PaymentsService = class PaymentsService {
     }
     async validateCustomer(billType, customer, billerCode) {
         try {
-            return await this.flutterwaveService.validateBillService(billType, billerCode || billType, customer);
+            return await this.flutterwaveService.validateBillService(billType, billerCode, customer);
         }
         catch (error) {
             throw new common_1.BadRequestException(error.message || 'Customer validation failed');
@@ -2000,171 +2526,9 @@ exports.PaymentsService = PaymentsService;
 exports.PaymentsService = PaymentsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(transaction_entity_1.Transaction)),
+    __param(2, (0, common_1.Inject)((0, common_1.forwardRef)(() => wallet_service_1.WalletService))),
     __metadata("design:paramtypes", [typeof (_a = typeof typeorm_2.Repository !== "undefined" && typeorm_2.Repository) === "function" ? _a : Object, typeof (_b = typeof flutterwave_service_1.FlutterwaveService !== "undefined" && flutterwave_service_1.FlutterwaveService) === "function" ? _b : Object, typeof (_c = typeof wallet_service_1.WalletService !== "undefined" && wallet_service_1.WalletService) === "function" ? _c : Object, typeof (_d = typeof event_emitter_1.EventEmitter2 !== "undefined" && event_emitter_1.EventEmitter2) === "function" ? _d : Object])
 ], PaymentsService);
-
-
-/***/ }),
-
-/***/ "./src/modules/payments/services/flutterwave.service.ts":
-/*!**************************************************************!*\
-  !*** ./src/modules/payments/services/flutterwave.service.ts ***!
-  \**************************************************************/
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var _a;
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.FlutterwaveService = void 0;
-const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const config_1 = __webpack_require__(/*! @nestjs/config */ "@nestjs/config");
-const flutterwave_node_v3_1 = __webpack_require__(/*! flutterwave-node-v3 */ "flutterwave-node-v3");
-let FlutterwaveService = class FlutterwaveService {
-    constructor(configService) {
-        this.configService = configService;
-        this.flw = new flutterwave_node_v3_1.default(this.configService.get('FLUTTERWAVE_PUBLIC_KEY'), this.configService.get('FLUTTERWAVE_SECRET_KEY'));
-    }
-    async initiatePayment(paymentData) {
-        try {
-            const payload = {
-                ...paymentData,
-                payment_options: 'card,banktransfer,ussd',
-            };
-            const response = await this.flw.StandardSubaccount.charge(payload);
-            if (response.status !== 'success') {
-                throw new common_1.BadRequestException(response.message || 'Failed to initiate payment');
-            }
-            return response.data.link;
-        }
-        catch (error) {
-            throw new common_1.BadRequestException(error.message || 'Payment initiation failed');
-        }
-    }
-    async verifyPayment(transactionId) {
-        try {
-            const response = await this.flw.Transaction.verify({ id: transactionId });
-            if (response.status !== 'success') {
-                throw new common_1.BadRequestException('Failed to verify payment');
-            }
-            return response.data;
-        }
-        catch (error) {
-            throw new common_1.BadRequestException(error.message || 'Payment verification failed');
-        }
-    }
-    async initiateTransfer(transferData) {
-        try {
-            const response = await this.flw.Transfer.initiate(transferData);
-            if (response.status !== 'success') {
-                throw new common_1.BadRequestException(response.message || 'Transfer initiation failed');
-            }
-            return response.data;
-        }
-        catch (error) {
-            throw new common_1.BadRequestException(error.message || 'Transfer failed');
-        }
-    }
-    async createVirtualAccount(accountData) {
-        try {
-            const payload = {
-                email: accountData.email,
-                is_permanent: true,
-                bvn: '12345678901',
-                tx_ref: `VA_${Date.now()}`,
-                firstname: accountData.firstName,
-                lastname: accountData.lastName,
-                phonenumber: accountData.phone,
-                narration: accountData.narration,
-            };
-            const response = await this.flw.VirtualAcct.create(payload);
-            if (response.status !== 'success') {
-                throw new common_1.BadRequestException(response.message || 'Virtual account creation failed');
-            }
-            return response.data;
-        }
-        catch (error) {
-            throw new common_1.BadRequestException(error.message || 'Virtual account creation failed');
-        }
-    }
-    async getBillCategories() {
-        try {
-            const response = await this.flw.Bills.fetch_bills();
-            if (response.status !== 'success') {
-                throw new common_1.BadRequestException('Failed to fetch bill categories');
-            }
-            return response.data;
-        }
-        catch (error) {
-            throw new common_1.BadRequestException(error.message || 'Failed to fetch bill categories');
-        }
-    }
-    async validateBillService(itemCode, billerCode, customer) {
-        try {
-            const response = await this.flw.Bills.validate({
-                item_code: itemCode,
-                biller_code: billerCode,
-                customer,
-            });
-            return response;
-        }
-        catch (error) {
-            throw new common_1.BadRequestException(error.message || 'Bill validation failed');
-        }
-    }
-    async payBill(billData) {
-        try {
-            const response = await this.flw.Bills.create_bill(billData);
-            if (response.status !== 'success') {
-                throw new common_1.BadRequestException(response.message || 'Bill payment failed');
-            }
-            return response.data;
-        }
-        catch (error) {
-            throw new common_1.BadRequestException(error.message || 'Bill payment failed');
-        }
-    }
-    async getBanks(country = 'NG') {
-        try {
-            const response = await this.flw.Bank.country({ country });
-            if (response.status !== 'success') {
-                throw new common_1.BadRequestException('Failed to fetch banks');
-            }
-            return response.data;
-        }
-        catch (error) {
-            throw new common_1.BadRequestException(error.message || 'Failed to fetch banks');
-        }
-    }
-    async resolveAccountNumber(accountNumber, bankCode) {
-        try {
-            const response = await this.flw.Misc.verify_Account({
-                account_number: accountNumber,
-                account_bank: bankCode,
-            });
-            if (response.status !== 'success') {
-                throw new common_1.BadRequestException('Account verification failed');
-            }
-            return response.data;
-        }
-        catch (error) {
-            throw new common_1.BadRequestException(error.message || 'Account verification failed');
-        }
-    }
-};
-exports.FlutterwaveService = FlutterwaveService;
-exports.FlutterwaveService = FlutterwaveService = __decorate([
-    (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [typeof (_a = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _a : Object])
-], FlutterwaveService);
 
 
 /***/ }),
@@ -2193,36 +2557,24 @@ class CreateUserDto {
 }
 exports.CreateUserDto = CreateUserDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'user@example.com' }),
-    (0, class_validator_1.IsEmail)(),
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, swagger_1.ApiPropertyOptional)({ example: 'user@example.com' }),
+    (0, class_validator_1.ValidateIf)((o) => !o.phone),
+    (0, class_validator_1.IsEmail)({}, { message: 'Invalid email address' }),
+    (0, class_validator_1.IsNotEmpty)({ message: 'Email is required if phone number is not provided' }),
     __metadata("design:type", String)
 ], CreateUserDto.prototype, "email", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'password123' }),
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.MinLength)(6),
+    (0, swagger_1.ApiPropertyOptional)({ example: '+2348123456789' }),
+    (0, class_validator_1.ValidateIf)((o) => !o.email),
+    (0, class_validator_1.IsPhoneNumber)(undefined, { message: 'Invalid phone number' }),
+    (0, class_validator_1.IsNotEmpty)({ message: 'Phone number is required if email is not provided' }),
     __metadata("design:type", String)
-], CreateUserDto.prototype, "password", void 0);
+], CreateUserDto.prototype, "phone", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'John' }),
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    __metadata("design:type", String)
-], CreateUserDto.prototype, "firstName", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({ example: 'Doe' }),
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    __metadata("design:type", String)
-], CreateUserDto.prototype, "lastName", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({ example: '+2348123456789', required: false }),
+    (0, swagger_1.ApiPropertyOptional)({ example: '[{ id: "random_string", category: "create-account", code: "123456", expires: "expiration_date" }]' }),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsPhoneNumber)(),
-    __metadata("design:type", String)
-], CreateUserDto.prototype, "phoneNumber", void 0);
+    __metadata("design:type", Array)
+], CreateUserDto.prototype, "codes", void 0);
 
 
 /***/ }),
@@ -2245,10 +2597,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.UpdateUserDto = void 0;
-const swagger_1 = __webpack_require__(/*! @nestjs/swagger */ "@nestjs/swagger");
-const create_user_dto_1 = __webpack_require__(/*! ./create-user.dto */ "./src/modules/users/dto/create-user.dto.ts");
 const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
-class UpdateUserDto extends (0, swagger_1.PartialType)(create_user_dto_1.CreateUserDto) {
+const class_validator_2 = __webpack_require__(/*! class-validator */ "class-validator");
+const swagger_1 = __webpack_require__(/*! @nestjs/swagger */ "@nestjs/swagger");
+class UpdateUserDto {
 }
 exports.UpdateUserDto = UpdateUserDto;
 __decorate([
@@ -2257,10 +2609,51 @@ __decorate([
     __metadata("design:type", Boolean)
 ], UpdateUserDto.prototype, "isActive", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'user@example.com' }),
+    (0, class_validator_2.IsEmail)({}, { message: 'Invalid email address' }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateUserDto.prototype, "email", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: '+2348123456789' }),
+    (0, class_validator_2.IsPhoneNumber)(undefined, { message: 'Invalid phone number' }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateUserDto.prototype, "phone", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: '[{ id: "random_string", category: "create-account", code: "123456", expires: "expiration_date" }]' }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], UpdateUserDto.prototype, "codes", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'password123' }),
+    (0, class_validator_2.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_2.MinLength)(6, { message: 'Password must be at least 6 characters' }),
+    __metadata("design:type", String)
+], UpdateUserDto.prototype, "password", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'John' }),
+    (0, class_validator_2.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateUserDto.prototype, "firstName", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Doe' }),
+    (0, class_validator_2.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateUserDto.prototype, "lastName", void 0);
+__decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], UpdateUserDto.prototype, "isEmailVerified", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UpdateUserDto.prototype, "isPhoneVerified", void 0);
 
 
 /***/ }),
@@ -2286,7 +2679,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.User = exports.UserRole = void 0;
 const typeorm_1 = __webpack_require__(/*! typeorm */ "typeorm");
 const class_transformer_1 = __webpack_require__(/*! class-transformer */ "class-transformer");
-const roles_decorator_1 = __webpack_require__(/*! ../../../common/decorators/roles.decorator */ "./src/common/decorators/roles.decorator.ts");
+const roles_decorator_1 = __webpack_require__(/*! ../../common/decorators/roles.decorator */ "./src/modules/common/decorators/roles.decorator.ts");
 Object.defineProperty(exports, "UserRole", ({ enumerable: true, get: function () { return roles_decorator_1.Role; } }));
 const wallet_entity_1 = __webpack_require__(/*! @/modules/wallet/entities/wallet.entity */ "./src/modules/wallet/entities/wallet.entity.ts");
 const notification_entity_1 = __webpack_require__(/*! @/modules/notifications/entities/notification.entity */ "./src/modules/notifications/entities/notification.entity.ts");
@@ -2321,13 +2714,17 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "lastName", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ nullable: true, unique: true }),
     __metadata("design:type", String)
-], User.prototype, "phoneNumber", void 0);
+], User.prototype, "phone", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'enum', enum: roles_decorator_1.Role, default: roles_decorator_1.Role.USER }),
     __metadata("design:type", typeof (_a = typeof roles_decorator_1.Role !== "undefined" && roles_decorator_1.Role) === "function" ? _a : Object)
 ], User.prototype, "role", void 0);
+__decorate([
+    (0, typeorm_1.Column)('jsonb', { default: [] }),
+    __metadata("design:type", Array)
+], User.prototype, "codes", void 0);
 __decorate([
     (0, typeorm_1.Column)({ default: true }),
     __metadata("design:type", Boolean)
@@ -2337,9 +2734,18 @@ __decorate([
     __metadata("design:type", Boolean)
 ], User.prototype, "isEmailVerified", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ default: false }),
+    __metadata("design:type", Boolean)
+], User.prototype, "isPhoneVerified", void 0);
+__decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", typeof (_b = typeof Date !== "undefined" && Date) === "function" ? _b : Object)
 ], User.prototype, "lastLoginAt", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    (0, class_transformer_1.Exclude)(),
+    __metadata("design:type", String)
+], User.prototype, "pin", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", typeof (_c = typeof Date !== "undefined" && Date) === "function" ? _c : Object)
@@ -2396,9 +2802,9 @@ const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const swagger_1 = __webpack_require__(/*! @nestjs/swagger */ "@nestjs/swagger");
 const users_service_1 = __webpack_require__(/*! ./users.service */ "./src/modules/users/users.service.ts");
 const update_user_dto_1 = __webpack_require__(/*! ./dto/update-user.dto */ "./src/modules/users/dto/update-user.dto.ts");
-const jwt_auth_guard_1 = __webpack_require__(/*! ../../common/guards/jwt-auth.guard */ "./src/common/guards/jwt-auth.guard.ts");
-const roles_guard_1 = __webpack_require__(/*! ../../common/guards/roles.guard */ "./src/common/guards/roles.guard.ts");
-const roles_decorator_1 = __webpack_require__(/*! ../../common/decorators/roles.decorator */ "./src/common/decorators/roles.decorator.ts");
+const jwt_auth_guard_1 = __webpack_require__(/*! ../common/guards/jwt-auth.guard */ "./src/modules/common/guards/jwt-auth.guard.ts");
+const roles_guard_1 = __webpack_require__(/*! ../common/guards/roles.guard */ "./src/modules/common/guards/roles.guard.ts");
+const roles_decorator_1 = __webpack_require__(/*! ../common/decorators/roles.decorator */ "./src/modules/common/decorators/roles.decorator.ts");
 let UsersController = class UsersController {
     constructor(usersService) {
         this.usersService = usersService;
@@ -2413,10 +2819,10 @@ let UsersController = class UsersController {
         return this.usersService.findById(id);
     }
     updateProfile(req, updateUserDto) {
-        return this.usersService.update(req.user.id, updateUserDto);
+        return this.usersService.updateUser(req.user.id, updateUserDto);
     }
     update(id, updateUserDto) {
-        return this.usersService.update(id, updateUserDto);
+        return this.usersService.updateUser(id, updateUserDto);
     }
     remove(id) {
         return this.usersService.remove(id);
@@ -2516,7 +2922,7 @@ const typeorm_1 = __webpack_require__(/*! @nestjs/typeorm */ "@nestjs/typeorm");
 const users_service_1 = __webpack_require__(/*! ./users.service */ "./src/modules/users/users.service.ts");
 const users_controller_1 = __webpack_require__(/*! ./users.controller */ "./src/modules/users/users.controller.ts");
 const user_entity_1 = __webpack_require__(/*! ./entities/user.entity */ "./src/modules/users/entities/user.entity.ts");
-const encryption_util_1 = __webpack_require__(/*! ../../common/utils/encryption.util */ "./src/common/utils/encryption.util.ts");
+const encryption_util_1 = __webpack_require__(/*! ../common/utils/encryption.util */ "./src/modules/common/utils/encryption.util.ts");
 let UsersModule = class UsersModule {
 };
 exports.UsersModule = UsersModule;
@@ -2568,21 +2974,42 @@ let UsersService = class UsersService {
     }
     async findAll() {
         return this.userRepository.find({
-            select: ['id', 'email', 'firstName', 'lastName', 'phoneNumber', 'role', 'isActive', 'createdAt'],
+            select: [
+                'id',
+                'email',
+                'firstName',
+                'lastName',
+                'phone',
+                'role',
+                'isActive',
+                'createdAt',
+            ],
         });
     }
     async findById(id) {
         const user = await this.userRepository.findOne({ where: { id } });
-        if (!user) {
+        if (!user)
             throw new common_1.NotFoundException(`User with ID ${id} not found`);
-        }
         return user;
     }
     async findByEmail(email) {
-        return this.userRepository.findOne({ where: { email } });
+        return this.userRepository.findOneBy({ email });
     }
-    async update(id, updateUserDto) {
-        await this.userRepository.update(id, updateUserDto);
+    async findByPhone(phone) {
+        return this.userRepository.findOneBy({ phone });
+    }
+    async findByEmailOrPhone(email, phone) {
+        if (!email && !phone)
+            return null;
+        return this.userRepository.findOne({
+            where: [
+                ...(email ? [{ email }] : []),
+                ...(phone ? [{ phone }] : []),
+            ],
+        });
+    }
+    async updateUser(id, data) {
+        await this.userRepository.update(id, data);
         return this.findById(id);
     }
     async remove(id) {
@@ -2593,6 +3020,52 @@ let UsersService = class UsersService {
     }
     async updateLastLogin(id) {
         await this.userRepository.update(id, { lastLoginAt: new Date() });
+    }
+    async storeVerificationCode(identifier, type, category, code) {
+        const user = await this.userRepository.findOneBy(type === 'email' ? { email: identifier } : { phone: identifier });
+        const newCode = {
+            id: this.generateRandomString(),
+            category,
+            code,
+            expires: this.getExpiryDate(),
+        };
+        if (!user) {
+            const newUser = this.userRepository.create(type === 'email'
+                ? { email: identifier, codes: [newCode] }
+                : { phone: identifier, codes: [newCode] });
+            await this.userRepository.save(newUser);
+        }
+        else {
+            await this.userRepository.update(user.id, {
+                codes: [...(user.codes || []), newCode],
+            });
+        }
+    }
+    async verifyCode(identifier, type, code) {
+        const user = await this.userRepository.findOneBy(type === 'email' ? { email: identifier } : { phone: identifier });
+        if (!user || !user.codes?.length)
+            return false;
+        const now = new Date();
+        const match = user.codes.find((c) => c.code === code);
+        if (!match)
+            return false;
+        if (match.expires < now)
+            return null;
+        return true;
+    }
+    generateRandomString(length = 10) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_@%&$#!';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+            const index = Math.floor(Math.random() * chars.length);
+            result += chars[index];
+        }
+        return result;
+    }
+    getExpiryDate(minutes = 30) {
+        const date = new Date();
+        date.setMinutes(date.getMinutes() + minutes);
+        return date;
     }
 };
 exports.UsersService = UsersService;
@@ -2863,6 +3336,7 @@ var WalletType;
     WalletType["MAIN"] = "main";
     WalletType["ESCROW"] = "escrow";
     WalletType["SAVINGS"] = "savings";
+    WalletType["BILL_PAYMENT"] = "bill_payment";
 })(WalletType || (exports.WalletType = WalletType = {}));
 let Wallet = class Wallet {
 };
@@ -2976,7 +3450,7 @@ let TransactionProcessor = TransactionProcessor_1 = class TransactionProcessor e
     async processDeposit(data) {
         this.logger.log('Processing deposit:', data);
         try {
-            await this.walletService.processWebhookDeposit(data);
+            await this.walletService.processWebhook(data);
             this.logger.log('Deposit processed successfully');
         }
         catch (error) {
@@ -3044,7 +3518,7 @@ const wallet_service_1 = __webpack_require__(/*! ./wallet.service */ "./src/modu
 const create_wallet_dto_1 = __webpack_require__(/*! ./dto/create-wallet.dto */ "./src/modules/wallet/dto/create-wallet.dto.ts");
 const fund_wallet_dto_1 = __webpack_require__(/*! ./dto/fund-wallet.dto */ "./src/modules/wallet/dto/fund-wallet.dto.ts");
 const withdraw_dto_1 = __webpack_require__(/*! ./dto/withdraw.dto */ "./src/modules/wallet/dto/withdraw.dto.ts");
-const jwt_auth_guard_1 = __webpack_require__(/*! ../../common/guards/jwt-auth.guard */ "./src/common/guards/jwt-auth.guard.ts");
+const jwt_auth_guard_1 = __webpack_require__(/*! ../common/guards/jwt-auth.guard */ "./src/modules/common/guards/jwt-auth.guard.ts");
 let WalletController = class WalletController {
     constructor(walletService) {
         this.walletService = walletService;
@@ -3188,7 +3662,7 @@ exports.WalletModule = WalletModule = __decorate([
             bullmq_1.BullModule.registerQueue({
                 name: 'transactions',
             }),
-            payments_module_1.PaymentsModule,
+            (0, common_1.forwardRef)(() => payments_module_1.PaymentsModule),
             notifications_module_1.NotificationsModule,
         ],
         controllers: [wallet_controller_1.WalletController],
@@ -3285,7 +3759,7 @@ let WalletService = class WalletService {
             },
         });
         await this.transactionRepository.update(transaction.id, {
-            externalReference: paymentData.data.tx_ref,
+            reference: paymentData.data.tx_ref,
             metadata: paymentData.data,
         });
         return {
@@ -3337,7 +3811,7 @@ let WalletService = class WalletService {
     async processWebhook(payload) {
         const { tx_ref, status, transaction_id } = payload;
         const transaction = await this.transactionRepository.findOne({
-            where: { externalReference: tx_ref },
+            where: { reference: tx_ref },
             relations: ['wallet'],
         });
         if (!transaction) {
@@ -3416,9 +3890,20 @@ exports.WalletService = WalletService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(wallet_entity_1.Wallet)),
     __param(1, (0, typeorm_1.InjectRepository)(transaction_entity_1.Transaction)),
     __param(2, (0, bullmq_1.InjectQueue)('transactions')),
+    __param(4, (0, common_1.Inject)((0, common_1.forwardRef)(() => payments_service_1.PaymentsService))),
     __metadata("design:paramtypes", [typeof (_a = typeof typeorm_2.Repository !== "undefined" && typeorm_2.Repository) === "function" ? _a : Object, typeof (_b = typeof typeorm_2.Repository !== "undefined" && typeorm_2.Repository) === "function" ? _b : Object, typeof (_c = typeof bullmq_2.Queue !== "undefined" && bullmq_2.Queue) === "function" ? _c : Object, typeof (_d = typeof typeorm_2.DataSource !== "undefined" && typeorm_2.DataSource) === "function" ? _d : Object, typeof (_e = typeof payments_service_1.PaymentsService !== "undefined" && payments_service_1.PaymentsService) === "function" ? _e : Object])
 ], WalletService);
 
+
+/***/ }),
+
+/***/ "@nestjs/axios":
+/*!********************************!*\
+  !*** external "@nestjs/axios" ***!
+  \********************************/
+/***/ ((module) => {
+
+module.exports = require("@nestjs/axios");
 
 /***/ }),
 
@@ -3642,6 +4127,16 @@ module.exports = require("passport-local");
 
 /***/ }),
 
+/***/ "rxjs":
+/*!***********************!*\
+  !*** external "rxjs" ***!
+  \***********************/
+/***/ ((module) => {
+
+module.exports = require("rxjs");
+
+/***/ }),
+
 /***/ "rxjs/operators":
 /*!*********************************!*\
   !*** external "rxjs/operators" ***!
@@ -3649,6 +4144,16 @@ module.exports = require("passport-local");
 /***/ ((module) => {
 
 module.exports = require("rxjs/operators");
+
+/***/ }),
+
+/***/ "twilio":
+/*!*************************!*\
+  !*** external "twilio" ***!
+  \*************************/
+/***/ ((module) => {
+
+module.exports = require("twilio");
 
 /***/ }),
 
@@ -3719,64 +4224,11 @@ module.exports = require("crypto");
 /******/ 	}
 /******/ 	
 /************************************************************************/
-var __webpack_exports__ = {};
-// This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
-(() => {
-var exports = __webpack_exports__;
-/*!*********************!*\
-  !*** ./src/main.ts ***!
-  \*********************/
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const core_1 = __webpack_require__(/*! @nestjs/core */ "@nestjs/core");
-const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
-const swagger_1 = __webpack_require__(/*! @nestjs/swagger */ "@nestjs/swagger");
-const config_1 = __webpack_require__(/*! @nestjs/config */ "@nestjs/config");
-const helmet_1 = __webpack_require__(/*! helmet */ "helmet");
-const compression = __webpack_require__(/*! compression */ "compression");
-const app_module_1 = __webpack_require__(/*! ./app.module */ "./src/app.module.ts");
-const all_exceptions_filter_1 = __webpack_require__(/*! ./common/filters/all-exceptions.filter */ "./src/common/filters/all-exceptions.filter.ts");
-const response_interceptor_1 = __webpack_require__(/*! ./common/interceptors/response.interceptor */ "./src/common/interceptors/response.interceptor.ts");
-const logging_interceptor_1 = __webpack_require__(/*! ./common/interceptors/logging.interceptor */ "./src/common/interceptors/logging.interceptor.ts");
-async function bootstrap() {
-    const app = await core_1.NestFactory.create(app_module_1.AppModule);
-    const configService = app.get(config_1.ConfigService);
-    const logger = new common_1.Logger('Bootstrap');
-    app.use((0, helmet_1.default)());
-    app.use(compression());
-    app.enableCors({
-        origin: process.env.NODE_ENV === 'production' ? ['https://yourapp.com'] : true,
-        credentials: true,
-    });
-    app.setGlobalPrefix(configService.get('API_PREFIX', 'api/v1'));
-    app.useGlobalPipes(new common_1.ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-        transformOptions: {
-            enableImplicitConversion: true,
-        },
-    }));
-    app.useGlobalFilters(new all_exceptions_filter_1.AllExceptionsFilter());
-    app.useGlobalInterceptors(new response_interceptor_1.ResponseInterceptor(), new logging_interceptor_1.LoggingInterceptor());
-    if (process.env.NODE_ENV !== 'production') {
-        const config = new swagger_1.DocumentBuilder()
-            .setTitle('Fintech API')
-            .setDescription('Comprehensive Fintech API with clean architecture')
-            .setVersion('1.0')
-            .addBearerAuth()
-            .build();
-        const document = swagger_1.SwaggerModule.createDocument(app, config);
-        swagger_1.SwaggerModule.setup('docs', app, document);
-    }
-    const port = configService.get('PORT', 3000);
-    await app.listen(port);
-    logger.log(`Application is running on: http://localhost:${port}`);
-    logger.log(`Swagger documentation: http://localhost:${port}/docs`);
-}
-bootstrap();
-
-})();
-
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __webpack_require__("./src/main.ts");
+/******/ 	
 /******/ })()
 ;

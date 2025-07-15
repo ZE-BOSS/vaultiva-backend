@@ -24,17 +24,16 @@ export class AuthService {
   async register(createUserDto: CreateUserDto) {
     const { email, phone } = createUserDto;
     const existingUser = await this.usersService.findByEmailOrPhone(email, phone);
-
     if (existingUser) {
       throw new ConflictException('User with this email or phone already exists');
     }
 
     const contact = email || phone;
-    const type = email ? 'email' : 'phone';
-    const verificationCode = this.generateCode();
+    const type = this.getContactType(contact);
+    const code = this.generateCode();
 
-    await this.sendCodeService.sendVerificationCode(contact, verificationCode, type);
-    await this.usersService.storeVerificationCode(contact, type, 'register', verificationCode);
+    await this.sendCodeService.sendVerificationCode(contact, code, type);
+    await this.usersService.storeVerificationCode(contact, type, 'register', code);
 
     return { message: 'Verification code sent' };
   }
@@ -42,16 +41,14 @@ export class AuthService {
   async resendCode(createUserDto: CreateUserDto) {
     const { email, phone } = createUserDto;
     const contact = email || phone;
-    const type = email ? 'email' : 'phone';
+    const type = this.getContactType(contact);
 
     const user = await this.usersService.findByEmailOrPhone(email, phone);
-    if (!user) {
-      throw new NotFoundException('User with this email or phone does not exist');
-    }
+    if (!user) throw new NotFoundException('User with this email or phone does not exist');
 
-    const verificationCode = this.generateCode();
-    await this.sendCodeService.sendVerificationCode(contact, verificationCode, type);
-    await this.usersService.storeVerificationCode(contact, type, 'resend', verificationCode);
+    const code = this.generateCode();
+    await this.sendCodeService.sendVerificationCode(contact, code, type);
+    await this.usersService.storeVerificationCode(contact, type, 'resend', code);
 
     return { message: 'Verification code sent' };
   }
@@ -89,10 +86,20 @@ export class AuthService {
     return { user: result, token };
   }
 
+  async validateUser(identifier: string, password: string): Promise<Partial<User> | null> {
+    const user = await this.usersService.findByEmailOrPhone(identifier, identifier);
+    if (user && await bcrypt.compare(password, user.password)) {
+      const { password: _, ...result } = user;
+      
+      return result;
+    }
+
+    return null;
+  }
+
   async initiateResetPassword(identifier: string) {
     const type = this.getContactType(identifier);
     const user = await this.usersService.findByEmailOrPhone(identifier, identifier);
-
     if (!user) throw new NotFoundException('User not found');
 
     const code = this.generateCode();

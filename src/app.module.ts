@@ -77,14 +77,12 @@ import { HealthModule } from '@/modules/health/health.module';
         }),
       ],
     }),
-
-    // Application modules
     AuthModule,
     UsersModule,
-    WalletModule,
     BillsModule,
     NotificationsModule,
     PaymentsModule,
+    WalletModule,
     HealthModule,
   ],
 })

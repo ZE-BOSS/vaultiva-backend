@@ -1,52 +1,56 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { FlutterwaveService } from './services/flutterwave.service';
+import { FlutterwaveService } from '../flutterwave/flutterwave.service';
 import { WalletService } from '../wallet/wallet.service';
 import { Transaction, TransactionType, TransactionStatus } from '../wallet/entities/transaction.entity';
+import { WalletType } from '../wallet/entities/wallet.entity';
 import * as crypto from 'crypto';
-
-export interface BillPaymentDto {
-  type: string;
-  amount: number;
-  customer: string;
-  biller_name?: string;
-  country?: string;
-  recurrence?: string;
-}
-
-export interface AirtimeDto {
-  amount: number;
-  phone: string;
-  network: string;
-}
-
-export interface DataDto {
-  amount: number;
-  phone: string;
-  network: string;
-  plan: string;
-}
+import { BillPaymentDto, AirtimeDto, DataDto } from './dto/payments.dto';
 
 @Injectable()
 export class PaymentsService {
   constructor(
     @InjectRepository(Transaction)
     private transactionRepository: Repository<Transaction>,
+
     private flutterwaveService: FlutterwaveService,
+
+    @Inject(forwardRef(() => WalletService))
     private walletService: WalletService,
+
     private eventEmitter: EventEmitter2,
   ) {}
+
+
+  async initializePayment(data: {
+    amount: number;
+    email: string;
+    reference: string;
+    metadata?: Record<string, any>;
+  }): Promise<any> {
+    try {
+      const response = await this.flutterwaveService.initializePayment(data);
+      return response;
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Payment initialization failed');
+    }
+  }
 
   async getBillCategories(): Promise<any> {
     return this.flutterwaveService.getBillCategories();
   }
 
   async payBill(userId: string, billData: BillPaymentDto): Promise<Transaction> {
-    const wallet = await this.walletService.findByUserId(userId);
+    const wallets = await this.walletService.findUserWallets(userId);
+    if (!wallets || wallets.length === 0) {
+      throw new NotFoundException('Wallet not found for user');
+    }
 
-    if (wallet.availableBalance < billData.amount) {
+    const wallet = wallets.find(w => w.type === WalletType.BILL_PAYMENT);
+
+    if (wallet.balance < billData.amount) {
       throw new BadRequestException('Insufficient wallet balance');
     }
 
@@ -83,7 +87,7 @@ export class PaymentsService {
       await this.deductFromWallet(wallet.id, billData.amount);
 
       savedTransaction.status = TransactionStatus.COMPLETED;
-      savedTransaction.providerReference = paymentResponse.reference;
+      savedTransaction.providerReference = paymentResponse.tx_ref;
       await this.transactionRepository.save(savedTransaction);
 
       this.eventEmitter.emit('bill.paid', { transaction: savedTransaction });
@@ -170,7 +174,7 @@ export class PaymentsService {
 
   async validateCustomer(billType: string, customer: string, billerCode?: string): Promise<any> {
     try {
-      return await this.flutterwaveService.validateBillService(billType, billerCode || billType, customer);
+      return await this.flutterwaveService.validateBillService(billType, billerCode, customer);
     } catch (error) {
       throw new BadRequestException(error.message || 'Customer validation failed');
     }

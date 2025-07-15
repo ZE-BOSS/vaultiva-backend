@@ -6,20 +6,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  Notification,
-  NotificationType,
-  NotificationChannel,
-} from './entities/notification.entity';
-
-export interface CreateNotificationDto {
-  title: string;
-  message: string;
-  type: NotificationType;
-  channel: NotificationChannel;
-  userId: string;
-  metadata?: Record<string, any>;
-}
+import { Notification } from './entities/notification.entity';
+import { CreateNotificationDto } from './dto/notifictions.dto';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { ConfigService } from '@nestjs/config';

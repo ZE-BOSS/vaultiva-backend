@@ -3,7 +3,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
-import * as compression from 'compression';
+import compression from 'compression';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './modules/common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from './modules/common/interceptors/response.interceptor';
@@ -44,8 +44,8 @@ async function bootstrap() {
   // Swagger documentation
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
-      .setTitle('Fintech API')
-      .setDescription('Comprehensive Fintech API with clean architecture')
+      .setTitle('Vaultiva API')
+      .setDescription('Comprehensive Fintech APP (Vautiva) API with clean architecture')
       .setVersion('1.0')
       .addBearerAuth()
       .build();

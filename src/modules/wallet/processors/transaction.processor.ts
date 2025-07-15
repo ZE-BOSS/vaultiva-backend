@@ -54,7 +54,7 @@ export class TransactionProcessor extends WorkerHost {
     this.logger.log('Processing deposit:', data);
     
     try {
-      await this.walletService.processWebhookDeposit(data);
+      await this.walletService.processWebhook(data);
       this.logger.log('Deposit processed successfully');
     } catch (error) {
       this.logger.error('Failed to process deposit:', error);
