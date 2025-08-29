@@ -11,15 +11,15 @@ export class WithdrawDto {
   @ApiProperty({ example: '044' })
   @IsString()
   @IsNotEmpty()
-  bankCode: string;
+  bankCode?: string;
 
   @ApiProperty({ example: '1234567890' })
   @IsString()
   @IsNotEmpty()
-  accountNumber: string;
+  accountNumber?: string;
 
   @ApiProperty({ example: 'John Doe' })
   @IsString()
   @IsNotEmpty()
-  accountName: string;
+  accountName?: string;
 }

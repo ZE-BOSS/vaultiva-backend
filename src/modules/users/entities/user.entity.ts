@@ -22,6 +22,13 @@ export interface VerificationCode {
   expires: Date;
 }
 
+export enum KYCStatus {
+  PENDING = 'pending',
+  REJECTED = 'rejected',
+  APPROVED = 'approved',
+  NOT_STARTED = 'not_started'
+}
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -39,6 +46,30 @@ export class User {
 
   @Column()
   lastName: string;
+
+  @Column()
+  bvn: number;
+
+  @Column()
+  nin: number;
+
+  @Column()
+  accountNumber: number;
+
+  @Column()
+  bank: string;
+
+  @Column()
+  accountName: string;
+
+  @Column()
+  address: string;
+
+  @Column()
+  dateOfBirth: string;
+
+  @Column({ nullable: true, type: 'text' })
+  biometricPublicKey?: string;
 
   @Column({ nullable: true, unique: true })
   phone: string;
@@ -58,8 +89,14 @@ export class User {
   @Column({ default: false })
   isPhoneVerified: boolean;
 
+  @Column({ type: 'enum', enum: KYCStatus, default: KYCStatus.NOT_STARTED })
+  kycStatus: KYCStatus;
+
   @Column({ nullable: true })
   lastLoginAt: Date;
+
+  @Column()
+  loginDevice: string;
 
   @Column({ nullable: true })
   @Exclude()

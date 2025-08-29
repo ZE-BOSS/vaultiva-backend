@@ -9,14 +9,15 @@ import { Repository } from 'typeorm';
 import { Notification } from './entities/notification.entity';
 import { CreateNotificationDto } from './dto/notifictions.dto';
 import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
-import { Twilio } from 'twilio';
+import { SendMailClient } from "zeptomail";
+import { verifyMail, verifyMessage } from './template/verifymail.template';
+import { Axios } from 'axios';
 
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
-  private readonly twilioClient: Twilio;
+  private readonly axios = new Axios()
 
   constructor(
     @InjectRepository(Notification)
@@ -24,44 +25,43 @@ export class NotificationsService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-    this.twilioClient = new Twilio(
-      this.configService.get<string>('TWILIO_ACCOUNT_SID'),
-      this.configService.get<string>('TWILIO_AUTH_TOKEN'),
-    );
+
   }
 
-  async sendVerificationCode(recipient: string, code: string, type: "email" | "phone") {
+  async sendVerificationCode(recipient: string, name = "", code: string, type: "email" | "phone") {
 
     if (type == "email") {
-      return this.sendEmail(recipient, code);
+      return this.sendEmail(
+        recipient, 
+        "Verification Code",
+        verifyMail(name, code)
+      );
     } else if (type == "phone") {
-      await this.sendSms(recipient, code);
-      await this.sendWhatsApp(recipient, code);
+      await this.sendSms(recipient, verifyMessage(code));
+      await this.sendWhatsApp(recipient, verifyMessage(code));
       return;
     }
 
     throw new Error('Invalid recipient type');
   }
 
-  private async sendEmail(email: string, code: string) {
-    const zeptoApiKey = this.configService.get<string>('ZEPTO_API_KEY');
-    const zeptoFrom = this.configService.get<string>('ZEPTO_FROM');
-
-    const payload = {
-      from: { address: zeptoFrom, name: 'SwiftBank' },
-      to: [{ email }],
-      subject: 'Your Verification Code',
-      htmlbody: `<p>Your SwiftBank verification code is <b>${code}</b>.</p>`,
-    };
-
-    const headers = {
-      'Content-Type': 'application/json',
-      'accept': 'application/json',
-      'X-API-KEY': zeptoApiKey,
-    };
+  private async sendEmail(email: string, title: string, content: string) {
+    const url = this.configService.get('ZEPTO_URL');
+    const token = this.configService.get('ZEPTO_API_KEY');
+    const from = this.configService.get('ZEPTO_FROM');
 
     try {
-      await firstValueFrom(this.httpService.post('https://api.zeptomail.com/v1.1/email', payload, { headers }));
+      let client = new SendMailClient({url, token});
+
+      client.sendMail({
+          "from": { "address": from, "name": "Vaultiva Team"},
+          "to": [{
+            "email_address": {"address": email}
+          }],
+          "subject": title,
+          "htmlbody": content,
+      })
+
       this.logger.log(`Verification code sent to email: ${email}`);
     } catch (error) {
       this.logger.error('Failed to send email:', error?.response?.data || error.message);
@@ -69,13 +69,18 @@ export class NotificationsService {
     }
   }
 
-  private async sendSms(phone: string, code: string) {
+  private async sendSms(phone: string, sms: string) {
     try {
-      await this.twilioClient.messages.create({
-        body: `Your SwiftBank verification code is ${code}`,
-        to: phone,
-        from: this.configService.get<string>('TWILIO_SMS_FROM'),
-      });
+      const data = {
+        "to": phone,
+        "from": "Vaultiva Tech",
+        "sms": sms,
+        "type": "plain",
+        "api_key": this.configService.get('TERMII_API_KEY'),
+        "channel": "generic",  
+      };
+
+      await this.axios.post(`https://${this.configService.get('TERMII_BASE_URL')}/api/sms/send`, data);
       this.logger.log(`SMS sent to ${phone}`);
     } catch (error) {
       this.logger.error('Failed to send SMS:', error.message);
@@ -83,14 +88,19 @@ export class NotificationsService {
     }
   }
 
-  private async sendWhatsApp(phone: string, code: string) {
+  private async sendWhatsApp(phone: string, message: string) {
     const formatted = phone.startsWith('+') ? phone : `+${phone}`;
     try {
-      await this.twilioClient.messages.create({
-        body: `Your SwiftBank WhatsApp verification code is ${code}`,
-        to: `whatsapp:${formatted}`,
-        from: this.configService.get<string>('TWILIO_WHATSAPP_FROM'),
-      });
+      const data = {
+        "to": phone,
+        "from": "Vaultiva Tech",
+        "sms": message,
+        "type": "plain",
+        "api_key": this.configService.get('TERMII_API_KEY'),
+        "channel": "whatsapp",  
+      };
+
+      await this.axios.post(`https://${this.configService.get('TERMII_BASE_URL')}/api/sms/send`, data);
       this.logger.log(`WhatsApp message sent to ${formatted}`);
     } catch (error) {
       this.logger.error('Failed to send WhatsApp:', error.message);

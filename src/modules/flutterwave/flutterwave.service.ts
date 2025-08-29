@@ -3,15 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import Flutterwave from 'flutterwave-node-v3';
 import { 
   ApiResponse, 
-  Bank, 
-  VerifyAccountResponse,
-  TransferDataResponse,
   TransactionVerifyResponse,
-  VirtualAccountCreateResponse,
-  VirtualAccountResponse,
   BillPaymentApiResponse,
   BillPaymentResponse,
-  TransferVerifyResponse,
+  Biller,
+  Transaction,
+  Verify,
+  FlutterwaveResponse
 } from './entities/flutterwave-response.entity';
 import {
   TransactionData,
@@ -19,6 +17,48 @@ import {
   VirtualAccountData,
   BillPaymentData
 } from './entities/flutterwave-data.entity';
+
+// 2. Categories to group billers
+export type Category = 'airtime' | 'data' | 'electricity' | 'internet' | 'tv' | 'betting' | 'others'
+
+// 3. Function to sort billers into categories
+export function sortByCategory(billers: Biller[]): Record<Category, Biller[]> {
+  const categories: Record<Category, Biller[]> = {
+    airtime: [],
+    data: [],
+    electricity: [],
+    internet: [],
+    tv: [],
+    betting: [],
+    others: [],
+  }
+
+  for (const biller of billers) {
+    if (biller.is_airtime || biller.biller_name.toLowerCase() === 'airtime') {
+      categories.airtime.push(biller)
+    } else if (biller.biller_name.toLowerCase().includes('data')) {
+      categories.data.push(biller)
+    } else if (biller.biller_name.toLowerCase().includes('prepaid') || biller.biller_name.toLowerCase().includes('postpaid') || biller.biller_name.toLowerCase().includes('electric')) {
+      categories.electricity.push(biller)
+    } else if (biller.biller_name.toLowerCase().includes('internet')) {
+      categories.internet.push(biller)
+    } else if (biller.biller_name.toLowerCase().includes('tv') || biller.biller_name.toLowerCase().includes('dstv') || biller.biller_name.toLowerCase().includes('gotv')) {
+      categories.tv.push(biller)
+    } else if (biller.biller_name.toLowerCase().includes('bet') || biller.biller_name.toLowerCase().includes('sport')) {
+      categories.betting.push(biller)
+    } else {
+      categories.others.push(biller)
+    }
+  }
+
+  return categories
+}
+
+// 4. Function to get all plans by category
+export function getPlansByCategory(billers: Biller[], category: Category): Biller[] {
+  const categories = sortByCategory(billers)
+  return categories[category] || []
+}
 
 
 @Injectable()
@@ -32,39 +72,14 @@ export class FlutterwaveService {
     );
   }
 
-  async initializePayment(data: {
-    amount: number;
-    email: string;
-    reference: string;
-    metadata?: Record<string, any>;
-  }): Promise<any> {
-    const payload = {
-      tx_ref: data.reference,
-      amount: data.amount,
-      currency: 'NGN',
-      redirect_url: process.env.FLW_REDIRECT_URL,
-      payment_options: 'card,banktransfer',
-      customer: {
-        email: data.email,
-      },
-      customizations: {
-        title: 'Wallet Funding',
-        description: 'Fund your wallet',
-      },
-      meta: data.metadata || {},
-    };
-
-    const response = await this.flw.Payment.initialize(payload) as ApiResponse<any>;
-
-    return response.data;
-  }
-
-  async getBillCategories(): Promise<ApiResponse<any>> {
-    const resp = await this.flw.Bills.fetch_bills() as ApiResponse<any>;
+  async getBillCategories(category: Category): Promise<Biller[]> {
+    const resp = await this.flw.Bills.fetch_bills_Cat() as ApiResponse<Biller[]>;
+    
     if (resp.status !== 'success' || !resp.data) {
       throw new BadRequestException(resp.message);
     }
-    return resp.data;
+
+    return getPlansByCategory(resp.data, category);
   }
 
   async verifyPayment(transactionId: string): Promise<TransactionData> {
@@ -75,62 +90,41 @@ export class FlutterwaveService {
     return resp.data;
   }
 
-  async validateBillService(billType: string, billerCode: string, customer: string): Promise<ApiResponse<any>> {
-    const resp = await this.flw.Bills.validate({ item_code: billType, biller_code: billerCode, customer }) as ApiResponse<any>;
+  async validateBillService(billType: string, billerCode: string, customer: string): Promise<Verify> {
+    const resp = await this.flw.Bills.validate({ item_code: billType, code: billerCode, customer }) as ApiResponse<Verify>;
     
     if (resp.status !== 'success' || !resp.data) {
       throw new BadRequestException(resp.message);
     }
+
     return resp.data;
   }
 
-  async initiateTransfer(payload: TransferData): Promise<TransferDataResponse> {
-    const resp = await this.flw.Transfer.initiate(payload) as TransferVerifyResponse;
-    if (resp.status !== 'success' || !resp.data) {
-      throw new BadRequestException(resp.message);
-    }
-    return resp.data;
+  async getAccountInfo(): Promise<{ 
+    account_number: string; 
+    bank_code: string; 
+    account_name: string; 
+    bank_name: string 
+  }> {
+    const account_number = this.configService.get('FLUTTER_WAVE_ACCOUNT_NUMBER');
+    const account_name = this.configService.get('FUTTER_WAVE_ACCOUNT_NAME');
+    const bank_name = this.configService.get('FLUTTER_WAVE_BANK_NAME');
+    const bank_code = this.configService.get('FLUTTER_WAVE_BANK_CODE');
+
+    return({ 
+      account_number: String(account_number), 
+      bank_code: String(bank_code), 
+      account_name: String(account_name), 
+      bank_name: String(bank_name) 
+    })
   }
 
-  async createVirtualAccount(input: VirtualAccountData): Promise<VirtualAccountResponse> {
-    const resp = await this.flw.VirtualAcct.create({
-      ...input,
-      is_permanent: true,
-      bvn: '12345678901',
-      tx_ref: `VA_${Date.now()}`,
-      firstname: input.firstName,
-      lastname: input.lastName,
-      phonenumber: input.phone,
-    }) as VirtualAccountCreateResponse;
-
+  async payBill(payload: BillPaymentData): Promise<Transaction> {
+    const resp = await this.flw.Bills.create_bill(payload);
     if (resp.status !== 'success' || !resp.data) {
       throw new BadRequestException(resp.message);
     }
-    return resp.data;
-  }
 
-  async payBill(payload: BillPaymentData): Promise<BillPaymentResponse> {
-    const resp = await this.flw.Bills.create_bill(payload) as BillPaymentApiResponse;
-    if (resp.status !== 'success' || !resp.data) {
-      throw new BadRequestException(resp.message);
-    }
-    return resp.data;
-  }
-
-  async getBanks(country = 'NG'): Promise<Bank[]> {
-    const resp = await this.flw.Bank.country({ country }) as ApiResponse<Bank[]>;
-    if (resp.status !== 'success' || !resp.data) {
-      throw new BadRequestException(resp.message);
-    }
-    return resp.data;
-  }
-
-  async resolveAccountNumber(account_number: string, account_bank: string): Promise<VerifyAccountResponse> {
-    const resp = await this.flw.Misc.verify_Account({ account_number, account_bank }) as ApiResponse<VerifyAccountResponse>;
-    if (resp.status !== 'success' || !resp.data) {
-      throw new BadRequestException(resp.message);
-    }
     return resp.data;
   }
 }
-

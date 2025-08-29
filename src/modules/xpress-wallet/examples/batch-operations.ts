@@ -1,15 +1,17 @@
-import { XpressWalletSDK } from '../src';
+import { XpressWalletSDK } from '../';
 
 async function batchOperationsExample() {
   const sdk = new XpressWalletSDK({
-    baseUrl: 'https://api.xpresswallet.com'
+    baseUrl: 'https://api.xpresswallet.com', // Replace with actual URL
+    xpressEmail: "test@email.com",
+    xpressPassword: "password123"
   });
 
   // Login first
-  await sdk.auth.login({
-    email: 'merchant@example.com',
-    password: 'password123'
-  });
+  // await sdk.auth.login({
+  //   email: 'merchant@example.com',
+  //   password: 'password123'
+  // });
 
   try {
     // Batch credit multiple customer wallets

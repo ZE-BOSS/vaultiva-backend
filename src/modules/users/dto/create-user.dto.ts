@@ -22,8 +22,4 @@ export class CreateUserDto {
   @IsPhoneNumber(undefined, { message: 'Invalid phone number' })
   @IsNotEmpty({ message: 'Phone number is required if email is not provided' })
   phone?: string;
-
-  @ApiPropertyOptional({ example: '[{ id: "random_string", category: "create-account", code: "123456", expires: "expiration_date" }]' })
-  @IsOptional()
-  codes: VerificationCode[];
 }

@@ -26,6 +26,8 @@ export interface XpressWalletConfig {
   baseUrl: string;
   timeout?: number;
   retries?: number;
+  xpressEmail: string;
+  xpressPassword: string;
 }
 
 export type TransactionType = 'CREDIT' | 'DEBIT' | 'ALL';

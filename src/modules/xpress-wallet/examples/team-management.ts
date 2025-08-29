@@ -1,15 +1,17 @@
-import { XpressWalletSDK } from '../src';
+import { XpressWalletSDK } from '../';
 
 async function teamManagementExample() {
   const sdk = new XpressWalletSDK({
-    baseUrl: 'https://api.xpresswallet.com'
+    baseUrl: 'https://api.xpresswallet.com', // Replace with actual URL
+    xpressEmail: "test@email.com",
+    xpressPassword: "password123"
   });
 
   // Login as admin
-  await sdk.auth.login({
-    email: 'admin@example.com',
-    password: 'password123'
-  });
+  // await sdk.auth.login({
+  //   email: 'admin@example.com',
+  //   password: 'password123'
+  // });
 
   try {
     // Get all available permissions

@@ -17,6 +17,7 @@ import { BillsModule } from '@/modules/bills/bills.module';
 import { NotificationsModule } from '@/modules/notifications/notifications.module';
 import { PaymentsModule } from '@/modules/payments/payments.module';
 import { HealthModule } from '@/modules/health/health.module';
+import { KycModule } from './modules/kyc/kyc.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { HealthModule } from '@/modules/health/health.module';
     PaymentsModule,
     WalletModule,
     HealthModule,
+    KycModule
   ],
 })
 export class AppModule {}

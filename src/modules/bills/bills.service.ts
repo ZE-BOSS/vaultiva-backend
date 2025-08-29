@@ -1,65 +1,95 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Bill, BillType } from './entities/bill.entity';
-import { BillPayment } from './entities/bill-payment.entity';
+import { RecurrenceFrequency, RecurringPayment, RecurringStatus } from './entities/recurring-payment.entity';
 import { PaymentsService } from '../payments/payments.service';
+import { BillPaymentDto } from '../payments/dto/payments.dto';
+import { User } from '../users/entities/user.entity';
+import { RecurringPaymentsService } from './recurring-payments.service';
+import flutterwave from '@api/flutterwave-v3';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class BillsService {
+  private readonly logger = new Logger(BillsService.name);
+
   constructor(
-    @InjectRepository(Bill)
-    private billRepository: Repository<Bill>,
-    @InjectRepository(BillPayment)
-    private billPaymentRepository: Repository<BillPayment>,
+    @InjectRepository(RecurringPayment)
+    private recurringService: RecurringPaymentsService,
     private paymentsService: PaymentsService,
+    private config: ConfigService,
   ) {}
 
-  async findAll(): Promise<Bill[]> {
-    return this.billRepository.find({
-      where: { isActive: true },
-      order: { name: 'ASC' },
+  /**
+   * Fetch available providers from Flutterwave
+   */
+  async getProviders(): Promise<any> {
+    return flutterwave.getV3TopBillCategories({
+      country: "NG",
+      Authorization: `Bearer ${this.config.get('FLUTTERWAVE_SECRET_KEY')}`
     });
   }
 
-  async findByType(type: BillType): Promise<Bill[]> {
-    return this.billRepository.find({
-      where: { type, isActive: true },
-      order: { name: 'ASC' },
+  /**
+   * Fetch available plans from Flutterwave
+   */
+  async getBillers(category: string): Promise<any> {
+    return flutterwave.getV3BillsCategoryBillers({
+      country: "NG",
+      category,
+      Authorization: `Bearer ${this.config.get('FLUTTERWAVE_SECRET_KEY')}`
     });
   }
 
-  async findById(id: string): Promise<Bill> {
-    const bill = await this.billRepository.findOne({
-      where: { id },
-      relations: ['payments'],
+  /**
+   * Fetch available plans from Flutterwave
+   */
+  async getPlans(code: string): Promise<any> {
+    return flutterwave.getV3BillersBiller_codeItems({
+      biller_code: code,
+      Authorization: `Bearer ${this.config.get('FLUTTERWAVE_SECRET_KEY')}`
     });
+  }
 
-    if (!bill) {
-      throw new NotFoundException(`Bill with ID ${id} not found`);
+  /**
+   * Verify service account e.g meter no, smartcard, etc
+   */
+  async verifyServiceAccount(code: string, customer: number) {
+    return flutterwave.getV3BillItemsCb141Validate({ 
+      code, 
+      customer,
+      Authorization: `Bearer ${this.config.get('FLUTTERWAVE_SECRET_KEY')}`
+    });
+  }
+
+  /**
+   * Pay a bill (core flow)
+   */
+  async payBill(user: User, walletId: string, dto: BillPaymentDto, reccuring: boolean, duration: number) {
+    try {
+      const response = await this.paymentsService.payBill(user.id, walletId, dto);
+
+      if(reccuring) this.recurringService.createRecurringPayment({
+        userId: response.userId,
+        transactionId: response.id,
+        amount: response.amount,
+        duration,
+        frequency: 
+          duration == 1?
+            RecurrenceFrequency.DAILY
+          : duration == 7?
+            RecurrenceFrequency.WEEKLY 
+          : duration == 30 || duration == 31?
+            RecurrenceFrequency.MONTHLY
+          : RecurrenceFrequency.CUSTOM
+        ,
+        status: RecurringStatus.ACTIVE,
+      })
+
+      return response;
+    } catch (err) {
+      this.logger.error(`Bill payment failed: ${err.message}`, err.stack);
+
+      throw new BadRequestException(`Bill payment failed: ${err.message}`);
     }
-
-    return bill;
-  }
-
-  async getUserBillPayments(userId: string): Promise<BillPayment[]> {
-    return this.billPaymentRepository.find({
-      where: { userId },
-      relations: ['bill'],
-      order: { createdAt: 'DESC' },
-    });
-  }
-
-  async getBillPaymentById(id: string): Promise<BillPayment> {
-    const payment = await this.billPaymentRepository.findOne({
-      where: { id },
-      relations: ['bill', 'user'],
-    });
-
-    if (!payment) {
-      throw new NotFoundException(`Bill payment with ID ${id} not found`);
-    }
-
-    return payment;
   }
 }

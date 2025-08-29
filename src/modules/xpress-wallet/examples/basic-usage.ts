@@ -1,20 +1,22 @@
-import { XpressWalletSDK, XpressWalletError } from '../src';
+import { XpressWalletSDK, XpressWalletError } from '../';
 
 async function basicExample() {
   // Initialize SDK
   const sdk = new XpressWalletSDK({
-    baseUrl: 'https://api.xpresswallet.com' // Replace with actual URL
+    baseUrl: 'https://api.xpresswallet.com', // Replace with actual URL
+    xpressEmail: "test@email.com",
+    xpressPassword: "password123"
   });
 
   try {
     // 1. Login
     console.log('Logging in...');
-    const { response: loginResponse, tokens } = await sdk.auth.login({
-      email: 'merchant@example.com',
-      password: 'password123'
-    });
+    // const { response: loginResponse, tokens } = await sdk.auth.login({
+    //   email: 'merchant@example.com',
+    //   password: 'password123'
+    // });
     
-    console.log('Login successful:', loginResponse.data.firstName);
+    // console.log('Login successful:', loginResponse.data.firstName);
 
     // 2. Get merchant profile
     const profile = await sdk.merchant.getProfile();

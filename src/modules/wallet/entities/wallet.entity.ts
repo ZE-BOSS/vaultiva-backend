@@ -14,20 +14,27 @@ import { Transaction } from './transaction.entity';
 export enum WalletType {
   MAIN = 'main',
   ESCROW = 'escrow',
-  SAVINGS = 'savings',
+  SPLIT_BILL = 'split_bill',
   BILL_PAYMENT = 'bill_payment',
+  OTHERS = 'others',
 }
 
 @Entity('wallets')
 export class Wallet {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+  
+  @Column()
+  customerId: string
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   balance: number;
 
   @Column({ type: 'enum', enum: WalletType, default: WalletType.MAIN })
   type: WalletType;
+
+  @Column()
+  name: string;
 
   @Column({ default: 'NGN' })
   currency: string;

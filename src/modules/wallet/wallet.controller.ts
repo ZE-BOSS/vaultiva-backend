@@ -14,6 +14,7 @@ import { CreateWalletDto } from './dto/create-wallet.dto';
 import { FundWalletDto } from './dto/fund-wallet.dto';
 import { WithdrawDto } from './dto/withdraw.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { TransactionType } from './entities/transaction.entity';
 
 @ApiTags('Wallet')
 @Controller('wallet')
@@ -55,19 +56,12 @@ export class WalletController {
     return this.walletService.findWalletById(id);
   }
 
-  @Post('fund')
-  @ApiOperation({ summary: 'Fund wallet' })
-  @ApiResponse({ status: 200, description: 'Wallet funding initiated successfully' })
-  fundWallet(@Request() req, @Body() fundWalletDto: FundWalletDto) {
-    return this.walletService.fundWallet(req.user.id, fundWalletDto);
-  }
-
   @Post('withdraw')
   @ApiOperation({ summary: 'Withdraw from wallet' })
   @ApiResponse({ status: 200, description: 'Withdrawal initiated successfully' })
   @ApiResponse({ status: 400, description: 'Insufficient balance' })
   withdraw(@Request() req, @Body() withdrawDto: WithdrawDto) {
-    return this.walletService.withdraw(req.user.id, withdrawDto);
+    return this.walletService.withdraw(req.user.id, TransactionType.WITHDRAWAL, withdrawDto);
   }
 
   @Post('webhook')

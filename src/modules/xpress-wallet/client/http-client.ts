@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { XpressWalletConfig, AuthTokens, ErrorResponse } from '../types/common';
+import { LoginRequest, LoginResponse } from '../xpress-wallet-sdk';
 
 export class XpressWalletError extends Error {
   constructor(
@@ -10,6 +11,11 @@ export class XpressWalletError extends Error {
     super(message);
     this.name = 'XpressWalletError';
   }
+}
+
+// Extend Axios config to support _retry flag
+interface RetryAxiosRequestConfig extends AxiosRequestConfig {
+  _retry?: boolean;
 }
 
 export class HttpClient {
@@ -29,8 +35,39 @@ export class HttpClient {
     this.setupInterceptors();
   }
 
+  // Explicit init method (call after instantiating)
+  async init(): Promise<void> {
+    const { tokens } = await this.login({
+      email: this.config.xpressEmail,
+      password: this.config.xpressPassword,
+    });
+    
+    this.setTokens(tokens);
+    this.setupInterceptors();
+  }
+
+  async login(credentials: LoginRequest): Promise<{ 
+    response: LoginResponse; 
+    tokens: AuthTokens;
+  }> {
+    const response = await this.client.post<LoginResponse>('/auth/login', credentials);
+
+    const tokens: AuthTokens = {
+      accessToken: response.headers['x-access-token'],
+      refreshToken: response.headers['x-refresh-token']
+    };
+
+    this.setTokens(tokens);
+
+    return {
+      response: response.data,
+      tokens
+    };
+  }
+
   setTokens(tokens: AuthTokens): void {
     this.tokens = tokens;
+    this.setBearerToken(tokens.accessToken);
   }
 
   getTokens(): AuthTokens | null {
@@ -39,6 +76,7 @@ export class HttpClient {
 
   clearTokens(): void {
     this.tokens = null;
+    this.clearBearerToken();
   }
 
   setBearerToken(token: string): void {
@@ -65,18 +103,18 @@ export class HttpClient {
         // Update tokens if new ones are provided in response headers
         const newAccessToken = response.headers['x-access-token'];
         const newRefreshToken = response.headers['x-refresh-token'];
-        
+
         if (newAccessToken && newRefreshToken && this.tokens) {
           this.tokens.accessToken = newAccessToken;
           this.tokens.refreshToken = newRefreshToken;
+          this.setBearerToken(newAccessToken);
         }
 
         return response;
       },
       async (error) => {
-        const originalRequest = error.config;
+        const originalRequest = error.config as RetryAxiosRequestConfig;
 
-        // If token is expired and we have a refresh token, try to refresh
         if (
           error.response?.status === 401 &&
           this.tokens?.refreshToken &&
@@ -104,7 +142,6 @@ export class HttpClient {
           }
         }
 
-        // Handle other errors
         if (error.response) {
           const errorData: ErrorResponse = error.response.data;
           throw new XpressWalletError(
@@ -144,6 +181,7 @@ export class HttpClient {
       if (newAccessToken && newRefreshToken) {
         this.tokens.accessToken = newAccessToken;
         this.tokens.refreshToken = newRefreshToken;
+        this.setBearerToken(newAccessToken);
       } else {
         throw new Error('Failed to refresh tokens');
       }

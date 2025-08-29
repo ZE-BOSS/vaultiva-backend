@@ -11,25 +11,6 @@ import { ApiResponse, AuthTokens } from '../types/common';
 export class AuthService {
   constructor(private httpClient: HttpClient) {}
 
-  async login(credentials: LoginRequest): Promise<{ 
-    response: LoginResponse; 
-    tokens: AuthTokens 
-  }> {
-    const response = await this.httpClient.post<LoginResponse>('/auth/login', credentials);
-    
-    const tokens: AuthTokens = {
-      accessToken: response.headers['x-access-token'],
-      refreshToken: response.headers['x-refresh-token']
-    };
-
-    this.httpClient.setTokens(tokens);
-    
-    return {
-      response: response.data,
-      tokens
-    };
-  }
-
   async logout(): Promise<ApiResponse> {
     const response = await this.httpClient.post<ApiResponse>('/auth/logout');
     this.httpClient.clearTokens();

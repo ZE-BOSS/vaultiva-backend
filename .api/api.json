@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "apis": [
+    {
+      "identifier": "flutterwave-v3",
+      "source": "flutterwave-v3.json",
+      "integrity": "sha512-eMEhcSG8tihJm5xpUVXFYbQZk1TASxPZsqskG4QnxBSgJnmg+NjGQeV03KdC/hKR4m96z1643UltnFjApgIfRw==",
+      "installerVersion": "6.1.3"
+    },
+    {
+      "identifier": "xpress-wallet",
+      "source": "xpress-wallet.json",
+      "integrity": "sha512-MMc+49YuhRTevstOtviwI3XEYkmrVB43blo05Cpedj31yeSt9JCByaE/lUz9RRyobir4VrI3O1XUsZoKjsaLbA==",
+      "installerVersion": "6.1.3"
+    }
+  ]
+}

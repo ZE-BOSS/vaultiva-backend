@@ -3,9 +3,9 @@ export interface BillPaymentDto {
   type: string;
   amount: number;
   customer: string;
-  biller_name?: string;
+  biller_code?: string;
   country?: string;
-  recurrence?: string;
+  item_code?: string;
 }
 
 export interface AirtimeDto {

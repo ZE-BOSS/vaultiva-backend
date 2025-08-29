@@ -6,7 +6,16 @@ export class CreateWalletDto {
   @ApiProperty({ enum: WalletType, default: WalletType.MAIN })
   @IsEnum(WalletType)
   @IsOptional()
-  type?: WalletType;
+  type: WalletType;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  name: string;
+
+  @ApiProperty()
+  @IsString()
+  customerId: string;
 
   @ApiProperty({ default: 'NGN' })
   @IsString()

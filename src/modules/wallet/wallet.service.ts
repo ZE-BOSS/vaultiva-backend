@@ -58,45 +58,55 @@ export class WalletService {
     return wallet;
   }
 
-  async fundWallet(userId: string, fundWalletDto: FundWalletDto) {
+  async fundAccount(userId: string, withdrawDto: WithdrawDto) {
     const wallet = await this.getUserMainWallet(userId);
+
     const reference = this.generateReference();
 
-    // Create pending transaction
-    const transaction = await this.createTransaction({
-      walletId: wallet.id,
-      amount: fundWalletDto.amount,
-      type: TransactionType.DEPOSIT,
-      status: TransactionStatus.PENDING,
-      reference,
-      description: 'Wallet funding',
-    });
+    // Create withdrawal transaction and debit wallet atomically
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    // Initialize payment with Flutterwave
-    const paymentData = await this.paymentsService.initializePayment({
-      amount: fundWalletDto.amount,
-      email: wallet.user.email,
-      reference,
-      metadata: {
-        userId,
+    try {
+      // Create transaction
+      const transaction = await queryRunner.manager.save(Transaction, {
         walletId: wallet.id,
+        amount: withdrawDto.amount,
+        type: TransactionType.DEPOSIT,
+        status: TransactionStatus.PROCESSING,
+        reference,
+        description: 'Wallet Deposit',
+        metadata: {
+          bankCode: withdrawDto.bankCode,
+          accountNumber: withdrawDto.accountNumber,
+          accountName: withdrawDto.accountName,
+        },
+      });
+
+      await queryRunner.commitTransaction();
+
+      // Process withdrawal asynchronously
+      await this.transactionQueue.add('process-deposit', {
         transactionId: transaction.id,
-      },
-    });
+        userId,
+      });
 
-    // Update transaction with external reference
-    await this.transactionRepository.update(transaction.id, {
-      reference: paymentData.data.tx_ref,
-      metadata: paymentData.data,
-    });
-
-    return {
-      transaction,
-      paymentLink: paymentData.data.link,
-    };
+      return transaction;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
-  async withdraw(userId: string, withdrawDto: WithdrawDto) {
+  async withdraw(
+    userId: string, 
+    type: TransactionType.WITHDRAWAL | TransactionType.BILL_PAYMENT | TransactionType.TRANSFER,  
+    withdrawDto: WithdrawDto,
+    metadata?: any
+  ) {
     const wallet = await this.getUserMainWallet(userId);
     
     if (wallet.balance < withdrawDto.amount) {
@@ -120,14 +130,15 @@ export class WalletService {
       const transaction = await queryRunner.manager.save(Transaction, {
         walletId: wallet.id,
         amount: withdrawDto.amount,
-        type: TransactionType.WITHDRAWAL,
+        type,
         status: TransactionStatus.PROCESSING,
         reference,
-        description: 'Wallet withdrawal',
+        description: `Wallet ${type}`,
         metadata: {
           bankCode: withdrawDto.bankCode,
           accountNumber: withdrawDto.accountNumber,
           accountName: withdrawDto.accountName,
+          ...metadata
         },
       });
 
@@ -148,11 +159,87 @@ export class WalletService {
     }
   }
 
-  async processWebhook(payload: any) {
+  async withdrawComplete(transactionId: string, ref: string, userId: string) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Reload the transaction from DB to ensure it exists and is current
+      const savedTransaction = await queryRunner.manager.findOne(Transaction, {
+        where: { id: transactionId },
+      });
+
+      if (!savedTransaction) {
+        throw new NotFoundException('Transaction not found');
+      }
+
+      // Update transaction status
+      savedTransaction.status = TransactionStatus.COMPLETED;
+      savedTransaction.providerReference = ref;
+
+      await queryRunner.manager.save(savedTransaction);
+
+      await queryRunner.commitTransaction();
+
+      // Optionally queue post-processing if needed
+      await this.transactionQueue.add('finalize-withdrawal', {
+        transactionId: savedTransaction.id,
+        userId,
+      });
+
+      return savedTransaction;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async withdrawFailed(transactionId: string, reason: string, userId: string) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Reload the transaction from DB to ensure it exists and is current
+      const savedTransaction = await queryRunner.manager.findOne(Transaction, {
+        where: { id: transactionId },
+      });
+
+      if (!savedTransaction) {
+        throw new NotFoundException('Transaction not found');
+      }
+
+      // Update transaction status
+      savedTransaction.status = TransactionStatus.FAILED;
+      savedTransaction.failureReason = reason;
+
+      await queryRunner.manager.save(savedTransaction);
+
+      await queryRunner.commitTransaction();
+
+      // Optionally queue post-processing if needed
+      await this.transactionQueue.add('finalize-withdrawal', {
+        transactionId: savedTransaction.id,
+        userId,
+      });
+
+      return savedTransaction;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async processWebhook(payload: { tx_ref: string, status: string, transaction_id: string }) {
     const { tx_ref, status, transaction_id } = payload;
     
     const transaction = await this.transactionRepository.findOne({
-      where: { reference: tx_ref },
+      where: { id: transaction_id },
       relations: ['wallet'],
     });
 
@@ -160,7 +247,10 @@ export class WalletService {
       throw new NotFoundException('Transaction not found');
     }
 
-    if (status === 'successful' && transaction.status === TransactionStatus.PENDING) {
+    if (status === 'successful' && (
+      transaction.status === TransactionStatus.PENDING || 
+      transaction.status === TransactionStatus.PROCESSING
+    )) {
       // Credit wallet and update transaction
       const queryRunner = this.dataSource.createQueryRunner();
       await queryRunner.connect();
@@ -173,6 +263,7 @@ export class WalletService {
 
         await queryRunner.manager.update(Transaction, transaction.id, {
           status: TransactionStatus.COMPLETED,
+          reference: tx_ref,
           metadata: { ...transaction.metadata, webhookData: payload },
         });
 
@@ -227,7 +318,8 @@ export class WalletService {
 
     if (!wallet) {
       // Create main wallet if it doesn't exist
-      return this.createWallet(userId, { type: WalletType.MAIN });
+      // return this.createWallet(userId, { type: WalletType.MAIN, name: "Main Wallet" });
+      throw new NotFoundException("User Wallet Not found")
     }
 
     return wallet;

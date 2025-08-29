@@ -6,6 +6,46 @@ declare module 'flutterwave-node-v3' {
     meta?: any;
   }
 
+  interface Biller {
+    id: number
+    biller_code: string
+    name: string
+    default_commission: number
+    date_added: string
+    country: string
+    is_airtime: boolean
+    biller_name: string
+    item_code: string
+    short_name: string
+    fee: number
+    commission_on_fee: boolean
+    label_name: string
+    amount: number
+  }
+
+  interface Transaction {
+    phone_number: string
+    amount: number
+    network: string
+    flw_ref: string
+    tx_ref: string
+    reference: string | null
+  }
+
+  interface Verify {
+    response_code: string
+    address: string | null
+    response_message: string
+    name: string
+    biller_code: string
+    customer: string
+    product_code: string
+    email: string | null
+    fee: number
+    maximum: number
+    minimum: number
+  }
+
   interface PaymentData {
     amount: number | string;
     currency: string;
@@ -84,13 +124,13 @@ declare module 'flutterwave-node-v3' {
     };
 
     Bills: {
-      fetch_bills(): Promise<FlutterwaveResponse<any>>;
+      fetch_bills_Cat(): Promise<FlutterwaveResponse<Biller[]>>;
       validate(params: {
         item_code: string;
-        biller_code: string;
+        code: string;
         customer: string;
-      }): Promise<FlutterwaveResponse<any>>;
-      create_bill(data: BillPaymentData): Promise<FlutterwaveResponse<any>>;
+      }): Promise<FlutterwaveResponse<Verify>>;
+      create_bill(data: BillPaymentData): Promise<FlutterwaveResponse<Transaction>>;
     };
 
     Bank: {
