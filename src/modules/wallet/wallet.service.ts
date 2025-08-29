@@ -45,6 +45,13 @@ export class WalletService {
     });
   }
 
+  async findUserWalletByType(userId: string, type: WalletType): Promise<Wallet | null> {
+    return this.walletRepository.findOne({
+      where: { userId, type },
+      relations: ['user'],
+    });
+  }
+
   async findWalletById(id: string): Promise<Wallet> {
     const wallet = await this.walletRepository.findOne({
       where: { id },
@@ -56,6 +63,101 @@ export class WalletService {
     }
     
     return wallet;
+  }
+
+  async transferBetweenWallets(
+    fromUserId: string,
+    toWalletId: string,
+    amount: number,
+    description: string,
+  ): Promise<Transaction> {
+    const fromWallet = await this.getUserMainWallet(fromUserId);
+    const toWallet = await this.findWalletById(toWalletId);
+
+    if (fromWallet.balance < amount) {
+      throw new BadRequestException('Insufficient balance');
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Debit from source wallet
+      await queryRunner.manager.update(Wallet, fromWallet.id, {
+        balance: () => `balance - ${amount}`,
+      });
+
+      // Credit to destination wallet
+      await queryRunner.manager.update(Wallet, toWalletId, {
+        balance: () => `balance + ${amount}`,
+      });
+
+      // Create transaction record
+      const transaction = await queryRunner.manager.save(Transaction, {
+        walletId: fromWallet.id,
+        amount,
+        type: TransactionType.TRANSFER,
+        status: TransactionStatus.COMPLETED,
+        reference: this.generateReference(),
+        description,
+        metadata: { toWalletId, toUserId: toWallet.userId },
+      });
+
+      await queryRunner.commitTransaction();
+      return transaction;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async creditMainWallet(userId: string, amount: number, description: string): Promise<Transaction> {
+    const wallet = await this.getUserMainWallet(userId);
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Credit wallet
+      await queryRunner.manager.update(Wallet, wallet.id, {
+        balance: () => `balance + ${amount}`,
+      });
+
+      // Create transaction record
+      const transaction = await queryRunner.manager.save(Transaction, {
+        walletId: wallet.id,
+        amount,
+        type: TransactionType.DEPOSIT,
+        status: TransactionStatus.COMPLETED,
+        reference: this.generateReference(),
+        description,
+      });
+
+      await queryRunner.commitTransaction();
+      return transaction;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async getTransactionById(transactionId: string): Promise<Transaction> {
+    const transaction = await this.transactionRepository.findOne({
+      where: { id: transactionId },
+      relations: ['wallet'],
+    });
+
+    if (!transaction) {
+      throw new NotFoundException('Transaction not found');
+    }
+
+    return transaction;
   }
 
   async fundAccount(userId: string, withdrawDto: WithdrawDto) {

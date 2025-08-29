@@ -53,6 +53,9 @@ export class UsersService {
     return this.userRepository.findOneBy({ phone });
   }
 
+  async findByUsername(username: string): Promise<User | null> {
+    return this.userRepository.findOneBy({ username });
+  }
   async findByEmailOrPhone(email?: string, phone?: string): Promise<User | null> {
     if (!email && !phone) return null;
 

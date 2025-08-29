@@ -188,7 +188,14 @@ export class AuthService {
   }
 
   async login({ identifier, password }: LoginDto) {
-    const user = await this.usersService.findByEmailOrPhone(identifier, identifier);
+    // Support email, phone, or username login
+    let user = await this.usersService.findByEmailOrPhone(identifier, identifier);
+    
+    // If not found by email/phone, try username
+    if (!user) {
+      user = await this.usersService.findByUsername(identifier);
+    }
+    
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('Invalid credentials');
     }
