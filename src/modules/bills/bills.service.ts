@@ -1,6 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { RecurrenceFrequency, RecurringPayment, RecurringStatus } from './entities/recurring-payment.entity';
+import { Bill } from './entities/bill.entity';
 import { PaymentsService } from '../payments/payments.service';
 import { BillPaymentDto } from '../payments/dto/payments.dto';
 import { User } from '../users/entities/user.entity';
@@ -13,8 +15,13 @@ export class BillsService {
   private readonly logger = new Logger(BillsService.name);
 
   constructor(
+    @InjectRepository(Bill)
+    private billRepository: Repository<Bill>,
     @InjectRepository(RecurringPayment)
+    private recurringRepository: Repository<RecurringPayment>,
+    @Inject(forwardRef(() => RecurringPaymentsService))
     private recurringService: RecurringPaymentsService,
+    @Inject(forwardRef(() => PaymentsService))
     private paymentsService: PaymentsService,
     private config: ConfigService,
   ) {}
@@ -23,53 +30,58 @@ export class BillsService {
    * Fetch available providers from Flutterwave
    */
   async getProviders(): Promise<any> {
-    return flutterwave.getV3TopBillCategories({
+    const response = await flutterwave.getV3TopBillCategories({
       country: "NG",
       Authorization: `Bearer ${this.config.get('FLUTTERWAVE_SECRET_KEY')}`
     });
+    return response.data;
   }
 
   /**
    * Fetch available plans from Flutterwave
    */
   async getBillers(category: string): Promise<any> {
-    return flutterwave.getV3BillsCategoryBillers({
+    const response = await flutterwave.getV3BillsCategoryBillers({
       country: "NG",
       category,
       Authorization: `Bearer ${this.config.get('FLUTTERWAVE_SECRET_KEY')}`
     });
+    return response.data;
   }
 
   /**
    * Fetch available plans from Flutterwave
    */
   async getPlans(code: string): Promise<any> {
-    return flutterwave.getV3BillersBiller_codeItems({
+    const response = await flutterwave.getV3BillersBiller_codeItems({
       biller_code: code,
       Authorization: `Bearer ${this.config.get('FLUTTERWAVE_SECRET_KEY')}`
     });
+    return response.data;
   }
 
   /**
    * Verify service account e.g meter no, smartcard, etc
    */
   async verifyServiceAccount(code: string, customer: number) {
-    return flutterwave.getV3BillItemsCb141Validate({ 
+    const response = await flutterwave.getV3BillItemsCb141Validate({ 
       code, 
       customer,
       Authorization: `Bearer ${this.config.get('FLUTTERWAVE_SECRET_KEY')}`
     });
+    return response.data;
   }
 
   /**
    * Pay a bill (core flow)
    */
-  async payBill(user: User, walletId: string, dto: BillPaymentDto, reccuring: boolean, duration: number) {
+  async payBill(userId: string, walletId: string, dto: BillPaymentDto, recurring: boolean, duration: number) {
     try {
-      const response = await this.paymentsService.payBill(user.id, walletId, dto);
+      const response = await this.paymentsService.payBill(userId, walletId, dto);
 
-      if(reccuring) this.recurringService.createRecurringPayment({
-        userId: response.userId,
+      if(recurring) {
+        await this.recurringService.createRecurringPayment({
+        userId: userId,
         transactionId: response.id,
         amount: response.amount,
         duration,
@@ -83,7 +95,8 @@ export class BillsService {
           : RecurrenceFrequency.CUSTOM
         ,
         status: RecurringStatus.ACTIVE,
-      })
+        });
+      }
 
       return response;
     } catch (err) {
@@ -91,5 +104,19 @@ export class BillsService {
 
       throw new BadRequestException(`Bill payment failed: ${err.message}`);
     }
+  }
+
+  async checkServiceDowntime(billerCode: string): Promise<boolean> {
+    const bill = await this.billRepository.findOne({
+      where: { billerCode },
+    });
+
+    if (!bill) return false;
+
+    return bill.hasDowntime && 
+           bill.downtimeStart && 
+           bill.downtimeEnd && 
+           new Date() >= bill.downtimeStart && 
+           new Date() <= bill.downtimeEnd;
   }
 }

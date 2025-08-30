@@ -33,7 +33,7 @@ export class BillsController {
   @Get(':category')
   @ApiOperation({ summary: 'Get all available bill category' })
   @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
-  findCategories(@Param('category') category: string) {
+  findBillers(@Param('category') category: string) {
     return this.billsService.getBillers(category);
   }
 
@@ -48,10 +48,10 @@ export class BillsController {
   @ApiOperation({ summary: 'Pay bill' })
   @ApiResponse({ status: 200, description: 'Bill payment successfully' })
   @ApiResponse({ status: 404, description: 'Bill not found' })
-  payBill(@Body() body: any, @Param('walletId') walletId, @Req() req) {
-    const { reccuring, duration, ...prop } = body
+  payBill(@Body() body: any, @Req() req) {
+    const { recurring, duration, walletId, ...prop } = body
 
-    return this.billsService.payBill(req.user.id, walletId, prop, reccuring, duration);
+    return this.billsService.payBill(req.user.id, walletId, prop, recurring, duration);
   }
 
   @Get('recurring/resume/:id')
@@ -80,5 +80,12 @@ export class BillsController {
   @ApiResponse({ status: 200, description: 'Recurring Payment Successfully Retrieved' })
   getRecurring(@Param('type') type: string, @Req() req) {
     return this.recurringService.listRecurring(req.user.id, type as TransactionType);
+  }
+
+  @Get('downtime/:billerCode')
+  @ApiOperation({ summary: 'Check service downtime' })
+  @ApiResponse({ status: 200, description: 'Downtime status retrieved successfully' })
+  checkDowntime(@Param('billerCode') billerCode: string) {
+    return this.billsService.checkServiceDowntime(billerCode);
   }
 }

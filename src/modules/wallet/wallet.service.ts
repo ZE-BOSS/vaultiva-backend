@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, forwardRef, Inject, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -13,6 +13,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class WalletService {
+  private readonly logger = new Logger(WalletService.name);
+
   constructor(
     @InjectRepository(Wallet)
     private walletRepository: Repository<Wallet>,
@@ -37,11 +39,30 @@ export class WalletService {
     return this.walletRepository.save(wallet);
   }
 
+  async lockWalletFunds(walletId: string, amount: number, duration: number): Promise<void> {
+    const wallet = await this.findWalletById(walletId);
+    
+    if (wallet.balance < amount) {
+      throw new BadRequestException('Insufficient balance to lock');
+    }
+
+    // Implementation for fund locking
+    // This would involve creating a separate locked_funds table or field
+    this.logger.log(`Locking ${amount} in wallet ${walletId} for ${duration} days`);
+  }
+
   async findUserWallets(userId: string): Promise<Wallet[]> {
     return this.walletRepository.find({
       where: { userId },
       relations: ['transactions'],
       order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findUserWalletsByType(userId: string, types: WalletType[]): Promise<Wallet[]> {
+    return this.walletRepository.find({
+      where: { userId, type: { $in: types } } as any,
+      relations: ['user'],
     });
   }
 
@@ -415,12 +436,9 @@ export class WalletService {
   private async getUserMainWallet(userId: string): Promise<Wallet> {
     const wallet = await this.walletRepository.findOne({
       where: { userId, type: WalletType.MAIN },
-      relations: ['user'],
     });
 
     if (!wallet) {
-      // Create main wallet if it doesn't exist
-      // return this.createWallet(userId, { type: WalletType.MAIN, name: "Main Wallet" });
       throw new NotFoundException("User Wallet Not found")
     }
 

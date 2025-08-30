@@ -23,6 +23,7 @@ import { RegisterBiometricDto } from './dto/register-biometric.dto';
 @Injectable()
 export class AuthService {
   private readonly xpressService: XpressWalletSDK;
+  private readonly logger = new Logger(AuthService.name);
 
   constructor(
     private readonly usersService: UsersService,
@@ -31,6 +32,10 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly walletService: WalletService,
   ) {
+    if (!this.config.get('XPRESS_EMAIL') || !this.config.get('XPRESS_PASSWORD')) {
+      this.logger.warn('XpressWallet credentials not configured');
+    }
+
     this.xpressService = new XpressWalletSDK({
       xpressEmail: this.config.get<string>('XPRESS_EMAIL'),
       xpressPassword: this.config.get<string>('XPRESS_PASSWORD'),
@@ -50,7 +55,7 @@ export class AuthService {
     const type = this.getContactType(contact);
     const code = this.generateCode();
 
-    await this.sendCodeService.sendVerificationCode(contact, "", code, type);
+    await this.sendCodeService.sendVerificationCode(contact, '', code, type);
     await this.usersService.storeVerificationCode(contact, type, 'register', code);
 
     return { message: 'Verification code sent' };
@@ -98,7 +103,7 @@ export class AuthService {
     if (!user) throw new NotFoundException('User with this email or phone does not exist');
 
     const code = this.generateCode();
-    await this.sendCodeService.sendVerificationCode(contact, user.firstName? user.firstName : "", code, type);
+    await this.sendCodeService.sendVerificationCode(contact, user.firstName || '', code, type);
     await this.usersService.storeVerificationCode(contact, type, 'resend', code);
 
     return { message: 'Verification code sent' };
@@ -118,18 +123,21 @@ export class AuthService {
     const user = await this.usersService.findByEmailOrPhone(contact, contact);
     if (!user) throw new NotFoundException('User not found');
 
-    // Step 2: Create Wallet on XpressWallet
-    const walletResult = await this.xpressService.wallet.createCustomerWallet({
+    try {
+      // Create Wallet on XpressWallet
+      await this.xpressService.init(); // Initialize SDK first
+      
+      const walletResult = await this.xpressService.wallet.createCustomerWallet({
       bvn: String(data.bvn),
       firstName: data.firstName,
       lastName: data.lastName,
       dateOfBirth: data.dateOfBirth,
       phoneNumber: data.phone,
       email: data.email,
-      address: data.address || ''
+        address: data.address || '',
     });
 
-    // Step 3: Create System Wallets in DB
+      // Create System Wallets in DB
     const wallets = [
       { name: "Main Wallet", type: WalletType.MAIN },
       { name: "Escrow Wallet", type: WalletType.ESCROW },
@@ -141,26 +149,34 @@ export class AuthService {
       { name: "Betting Wallet", type: WalletType.BILL_PAYMENT },
     ];
 
-    await Promise.all(
-      wallets.map((wallet) =>
-        this.walletService.createWallet(user.id, { name: wallet.name, type: wallet.type, customerId: walletResult.customer.id })
-      )
-    );
+      await Promise.all(
+        wallets.map((wallet) =>
+          this.walletService.createWallet(user.id, { 
+            name: wallet.name, 
+            type: wallet.type, 
+            customerId: walletResult.customer.id 
+          })
+        )
+      );
 
-    // Step 4: Update user profile
-    return this.usersService.updateUser(user.id, {
+      // Update user profile
+      return this.usersService.updateUser(user.id, {
       ...data,
       accountName: walletResult.wallet.accountName,
       accountNumber: Number(walletResult.wallet.accountNumber),
       bank: walletResult.wallet.bankName,
     });
+    } catch (error) {
+      this.logger.error('Profile completion failed:', error);
+      throw new BadRequestException('Failed to complete profile setup');
+    }
   }
 
   async updatePassword(userId: string, newPassword: string) {
     const user = await this.usersService.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
-    if (user.password) throw new BadRequestException('Password already set');
+    // Allow password updates
 
     const hashedPassword = await bcrypt.hash(newPassword, 12);
     return this.usersService.updateUser(userId, { password: hashedPassword });
@@ -181,7 +197,7 @@ export class AuthService {
 
   async adminLogin(email: string, password: string) {
     const admin = await this.usersService.findByEmail(email);
-    if (!admin || !(await bcrypt.compare(password, admin.password))) {
+    if (!admin || !admin.password || !(await bcrypt.compare(password, admin.password))) {
       throw new UnauthorizedException('Invalid admin credentials');
     }
     return { token: this.generateToken(admin) };
@@ -196,7 +212,7 @@ export class AuthService {
       user = await this.usersService.findByUsername(identifier);
     }
     
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -207,7 +223,7 @@ export class AuthService {
 
   async validateUser(identifier: string, password: string): Promise<Partial<User> | null> {
     const user = await this.usersService.findByEmailOrPhone(identifier, identifier);
-    if (user && await bcrypt.compare(password, user.password)) {
+    if (user && user.password && await bcrypt.compare(password, user.password)) {
       const { password: _, ...result } = user;
       
       return result;
@@ -221,7 +237,7 @@ export class AuthService {
     const user = await this.usersService.findByEmailOrPhone(identifier, identifier);
     if (!user) throw new NotFoundException('User not found');
 
-    const code = this.generateCode();
+    await this.sendCodeService.sendVerificationCode(identifier, user.firstName || '', code, type);
     await this.usersService.storeVerificationCode(identifier, type, 'reset-pin', code);
     await this.sendCodeService.sendVerificationCode(identifier, user.firstName? user.firstName : "", code, type);
 
@@ -246,7 +262,7 @@ export class AuthService {
     if (!user) throw new NotFoundException('User not found');
 
     const code = this.generateCode();
-    await this.usersService.storeVerificationCode(identifier, type, 'reset-password', code);
+    await this.sendCodeService.sendVerificationCode(identifier, user.firstName || '', code, type);
     await this.sendCodeService.sendVerificationCode(identifier, user.firstName? user.firstName : "", code, type);
 
     return { message: 'Verification code sent' };

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, Inject, forwardRef, ConflictException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Inject, forwardRef, ConflictException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -14,6 +14,7 @@ import flutterwave from '@api/flutterwave-v3';
 @Injectable()
 export class PaymentsService {
   private readonly xpressService: XpressWalletSDK;
+  private readonly logger = new Logger(PaymentsService.name);
   
   constructor(
     @InjectRepository(Transaction)
@@ -23,6 +24,10 @@ export class PaymentsService {
     private eventEmitter: EventEmitter2,
     private readonly config: ConfigService,
   ) {
+    if (!this.config.get('XPRESS_EMAIL') || !this.config.get('XPRESS_PASSWORD')) {
+      this.logger.warn('XpressWallet credentials not configured');
+    }
+
     this.xpressService = new XpressWalletSDK({
       xpressEmail: this.config.get<string>('XPRESS_EMAIL'),
       xpressPassword: this.config.get<string>('XPRESS_PASSWORD'),
@@ -36,10 +41,10 @@ export class PaymentsService {
     account_name: string; 
     bank_name: string 
   }> {
-    const account_number = this.config.get('FLUTTER_WAVE_ACCOUNT_NUMBER');
-    const account_name = this.config.get('FUTTER_WAVE_ACCOUNT_NAME');
-    const bank_name = this.config.get('FLUTTER_WAVE_BANK_NAME');
-    const bank_code = this.config.get('FLUTTER_WAVE_BANK_CODE');
+    const account_number = this.config.get('FLUTTERWAVE_ACCOUNT_NUMBER');
+    const account_name = this.config.get('FLUTTERWAVE_ACCOUNT_NAME');
+    const bank_name = this.config.get('FLUTTERWAVE_BANK_NAME');
+    const bank_code = this.config.get('FLUTTERWAVE_BANK_CODE');
 
     return({ 
       account_number: String(account_number), 
@@ -51,7 +56,7 @@ export class PaymentsService {
 
   async payBill(userId: string, walletId: string, billData: BillPaymentDto): Promise<Transaction> {
     const wallet = await this.walletService.findWalletById(walletId);
-    if (!wallet) {
+    if (!wallet || wallet.userId !== userId) {
       throw new NotFoundException('Wallet not found for user');
     }
 
@@ -60,7 +65,7 @@ export class PaymentsService {
     }
 
     // Create transaction record
-    const transaction = await this.walletService.withdraw(userId, TransactionType.BILL_PAYMENT, { amount: billData.amount }, billData)
+    const transaction = await this.walletService.withdraw(userId, TransactionType.BILL_PAYMENT, { amount: billData.amount }, billData);
 
     try {
       // Deduct from wallet
@@ -74,13 +79,13 @@ export class PaymentsService {
         narration: billData.type
       });
 
-      if(deducted && !status.toLowerCase().includes("pending")) {
-        this.walletService.withdrawComplete(transaction.id, reference, userId)
+      if(deducted && status && !status.toLowerCase().includes("pending")) {
+        await this.walletService.withdrawComplete(transaction.id, reference, userId);
       } 
       
       if(!deducted){
         await this.walletService.withdrawFailed(transaction.id, reason, userId);
-        throw new BadRequestException(reason);
+        throw new BadRequestException(reason || 'Bill payment failed');
       }
 
       this.eventEmitter.emit('bill.paid', { transaction: transaction });
@@ -88,7 +93,7 @@ export class PaymentsService {
       return transaction;
     } catch (error) {
       await this.walletService.withdrawFailed(transaction.id, error.message, userId);
-      throw new BadRequestException(error.message || 'Bill payment failed');
+      throw error;
     }
   }
 
@@ -143,20 +148,21 @@ export class PaymentsService {
 
     if(type == "bill_payment") {
       if(!customer) {
-        throw new ConflictException("Customer number required");
+        return { deducted: false, reason: "Customer number required" };
       }
 
       if(!biller_code) {
-        throw new ConflictException("Biller Code required");
+        return { deducted: false, reason: "Biller Code required" };
       }
 
       if(!item_code) {
-        throw new ConflictException("Item Code required");
+        return { deducted: false, reason: "Item Code required" };
       }
 
-      const account_info = await this.getAccountInfo();
+      try {
+        const account_info = await this.getAccountInfo();
 
-      // 4. Move funds from XpressWallet to Flutterwave
+        // Move funds from XpressWallet to Flutterwave
       const xdata = await this.xpressService.transfer.customerBankTransfer({
         customerId: wallet.customerId,
         accountName: account_info.account_name,
@@ -166,11 +172,11 @@ export class PaymentsService {
         narration: `Bill Payment ${narration}`,
       });
 
-      if(!xdata.status || !xdata.transfer) {
-        return({ deducted: false, reason: xdata.message })
-      }
+        if(!xdata.status || !xdata.transfer) {
+          return { deducted: false, reason: xdata.message || 'Transfer failed' };
+        }
 
-      // 5. Call Flutterwave Bills API
+        // Call Flutterwave Bills API
       const fwResponse = await flutterwave.postV3BillersBiller_codeItemsItem_codePayment({
         country: 'NG',
         customer_id: customer,
@@ -181,13 +187,19 @@ export class PaymentsService {
         Authorization: `Bearer ${this.config.get('FLUTTERWAVE_SECRET_KEY')}`
       });
 
-      if(fwResponse.status != 200 || !fwResponse.data.data) {
-        return({ deducted: false, reason: fwResponse.data.message, status: fwResponse.data.status })
-      }
+        if(fwResponse.status !== 200 || !fwResponse.data?.data) {
+          return { deducted: false, reason: fwResponse.data?.message || 'Payment failed', status: fwResponse.data?.status };
+        }
 
-      this.eventEmitter.emit('wallet.debit', { walletId, amount });
-      return({ deducted: true, reference: fwResponse.data.data.tx_ref })
+        this.eventEmitter.emit('wallet.debit', { walletId, amount });
+        return { deducted: true, reference: fwResponse.data.data.tx_ref, status: fwResponse.data.status };
+      } catch (error) {
+        this.logger.error('Bill payment error:', error);
+        return { deducted: false, reason: error.message || 'Payment processing failed' };
+      }
     }
+
+    return { deducted: false, reason: 'Unsupported transaction type' };
   }
 
   private generateReference(prefix: string): string {
