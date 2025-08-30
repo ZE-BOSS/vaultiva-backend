@@ -19,7 +19,8 @@
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:generate": "npm run typeorm -- migration:generate -d src/modules/database/data-source.ts",
     "migration:run": "npm run typeorm -- migration:run -d src/modules/database/data-source.ts",
-    "migration:revert": "npm run typeorm -- migration:revert -d src/modules/database/data-source.ts"
+    "migration:revert": "npm run typeorm -- migration:revert -d src/modules/database/data-source.ts",
+    "seed": "ts-node src/database/seeds/seed.ts"
   },
   "dependencies": {
     "@api/flutterwave-v3": "file:.api/apis/flutterwave-v3",

@@ -12,12 +12,11 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { SendMailClient } from "zeptomail";
 import { verifyMail, verifyMessage } from './template/verifymail.template';
-import { Axios } from 'axios';
+import axios from 'axios';
 
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
-  private readonly axios = new Axios()
 
   constructor(
     @InjectRepository(Notification)
@@ -25,7 +24,6 @@ export class NotificationsService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-
   }
 
   async sendVerificationCode(recipient: string, name = "", code: string, type: "email" | "phone") {
@@ -80,7 +78,7 @@ export class NotificationsService {
         "channel": "generic",  
       };
 
-      await this.axios.post(`https://${this.configService.get('TERMII_BASE_URL')}/api/sms/send`, data);
+      await axios.post(`https://${this.configService.get('TERMII_BASE_URL')}/api/sms/send`, data);
       this.logger.log(`SMS sent to ${phone}`);
     } catch (error) {
       this.logger.error('Failed to send SMS:', error.message);
@@ -100,7 +98,7 @@ export class NotificationsService {
         "channel": "whatsapp",  
       };
 
-      await this.axios.post(`https://${this.configService.get('TERMII_BASE_URL')}/api/sms/send`, data);
+      await axios.post(`https://${this.configService.get('TERMII_BASE_URL')}/api/sms/send`, data);
       this.logger.log(`WhatsApp message sent to ${formatted}`);
     } catch (error) {
       this.logger.error('Failed to send WhatsApp:', error.message);

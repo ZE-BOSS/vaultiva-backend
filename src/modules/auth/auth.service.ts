@@ -1,321 +1,146 @@
 import {
   Injectable,
-  UnauthorizedException,
-  ConflictException,
-  BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
-import { UsersService } from '../users/users.service';
-import { CreateUserDto } from '../users/dto/create-user.dto';
-import { LoginDto } from './dto/login.dto';
-import { User } from '../users/entities/user.entity';
-import { NotificationsService } from '../notifications/notifications.service';
-import { XpressWalletSDK } from '../xpress-wallet';
-import { ConfigService } from '@nestjs/config';
-import { WalletService } from '../wallet/wallet.service';
-import { WalletType } from '../wallet/entities/wallet.entity';
-import * as crypto from 'crypto';
-import { BiometricLoginDto } from './dto/biometric-login.dto';
-import { RegisterBiometricDto } from './dto/register-biometric.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from './entities/user.entity';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
-export class AuthService {
-  private readonly xpressService: XpressWalletSDK;
-  private readonly logger = new Logger(AuthService.name);
-
+export class UsersService {
   constructor(
-    private readonly usersService: UsersService,
-    private readonly jwtService: JwtService,
-    private readonly sendCodeService: NotificationsService,
-    private readonly config: ConfigService,
-    private readonly walletService: WalletService,
-  ) {
-    if (!this.config.get('XPRESS_EMAIL') || !this.config.get('XPRESS_PASSWORD')) {
-      this.logger.warn('XpressWallet credentials not configured');
-    }
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
 
-    this.xpressService = new XpressWalletSDK({
-      xpressEmail: this.config.get<string>('XPRESS_EMAIL'),
-      xpressPassword: this.config.get<string>('XPRESS_PASSWORD'),
-      baseUrl: this.config.get<string>('XPRESS_BASEURL'),
+  async findAll(): Promise<User[]> {
+    return this.userRepository.find({
+      select: [
+        'id',
+        'email',
+        'firstName',
+        'lastName',
+        'username',
+        'bvn',
+        'nin',
+        'accountNumber',
+        'phone',
+        'role',
+        'isActive',
+        'createdAt',
+      ],
     });
   }
 
-  async register(createUserDto: CreateUserDto) {
-    const { email, phone } = createUserDto;
-    const existingUser = await this.usersService.findByEmailOrPhone(email, phone);
-
-    if (existingUser) {
-      throw new ConflictException('User with this email or phone already exists');
-    }
-
-    const contact = email || phone;
-    const type = this.getContactType(contact);
-    const code = this.generateCode();
-
-    await this.sendCodeService.sendVerificationCode(contact, '', code, type);
-    await this.usersService.storeVerificationCode(contact, type, 'register', code);
-
-    return { message: 'Verification code sent' };
+  async findById(id: string): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException(`User with ID ${id} not found`);
+    return user;
   }
 
-  async registerBiometricDevice(dto: RegisterBiometricDto) {
-    const user = await this.usersService.findById(dto.userId);
-    if (!user) throw new NotFoundException('User not found');
+  async findByEmail(email: string): Promise<User | null> {
+    await this.usersService.storeVerificationCode(identifier, type, 'reset-password', code);
+  }
 
-    return this.usersService.updateUser(user.id, {
-      biometricPublicKey: dto.publicKey,
+  async findByPhone(phone: string): Promise<User | null> {
+    return this.userRepository.findOneBy({ phone });
+  }
+
+  async findByUsername(username: string): Promise<User | null> {
+    return this.userRepository.findOneBy({ username });
+  }
+  async findByEmailOrPhone(email?: string, phone?: string): Promise<User | null> {
+    if (!email && !phone) return null;
+
+    return this.userRepository.findOne({
+      where: [
+        ...(email ? [{ email }] : []),
+        ...(phone ? [{ phone }] : []),
+      ],
     });
   }
 
-  async biometricLogin(dto: BiometricLoginDto) {
-    const user = await this.usersService.findByEmailOrPhone(dto.identifier, dto.identifier);
-    if (!user) throw new UnauthorizedException('Invalid identifier');
-
-    if (!user.biometricPublicKey) {
-      throw new BadRequestException('Biometrics not registered for this user');
-    }
-
-    // Verify signature with stored public key
-    const verifier = crypto.createVerify('SHA256');
-    verifier.update(dto.challenge);
-    verifier.end();
-
-    const isValid = verifier.verify(user.biometricPublicKey, dto.signature, 'base64');
-    if (!isValid) {
-      throw new UnauthorizedException('Invalid biometric signature');
-    }
-
-    const token = this.generateToken(user);
-    const { password, pin, ...result } = user;
-
-    return { user: result, token };
+  async updateUser(id: string, data: Partial<User>): Promise<User> {
+    await this.userRepository.update(id, data);
+    return this.findById(id);
   }
 
-  async resendCode(createUserDto: CreateUserDto) {
-    const { email, phone } = createUserDto;
-    const contact = email || phone;
-    const type = this.getContactType(contact);
-
-    const user = await this.usersService.findByEmailOrPhone(email, phone);
-    if (!user) throw new NotFoundException('User with this email or phone does not exist');
-
-    const code = this.generateCode();
-    await this.sendCodeService.sendVerificationCode(contact, user.firstName || '', code, type);
-    await this.usersService.storeVerificationCode(contact, type, 'resend', code);
-
-    return { message: 'Verification code sent' };
-  }
-
-  async verifyCode(contact: string, code: string) {
-    const type = this.getContactType(contact);
-    const isValid = await this.usersService.verifyCode(contact, type, code);
-
-    if (isValid === null) throw new BadRequestException('Verification code expired');
-    if (!isValid) throw new BadRequestException('Invalid verification code');
-
-    return { message: 'Verification successful' };
-  }
-
-  async completeProfile(contact: string, data: Partial<User>) {
-    const user = await this.usersService.findByEmailOrPhone(contact, contact);
-    if (!user) throw new NotFoundException('User not found');
-
-    try {
-      // Create Wallet on XpressWallet
-      await this.xpressService.init(); // Initialize SDK first
-      
-      const walletResult = await this.xpressService.wallet.createCustomerWallet({
-      bvn: String(data.bvn),
-      firstName: data.firstName,
-      lastName: data.lastName,
-      dateOfBirth: data.dateOfBirth,
-      phoneNumber: data.phone,
-      email: data.email,
-        address: data.address || '',
-    });
-
-      // Create System Wallets in DB
-    const wallets = [
-      { name: "Main Wallet", type: WalletType.MAIN },
-      { name: "Escrow Wallet", type: WalletType.ESCROW },
-      { name: "Airtime Wallet", type: WalletType.BILL_PAYMENT },
-      { name: "Data Wallet", type: WalletType.BILL_PAYMENT },
-      { name: "Electricity Wallet", type: WalletType.BILL_PAYMENT },
-      { name: "TV Wallet", type: WalletType.BILL_PAYMENT },
-      { name: "Internet Wallet", type: WalletType.BILL_PAYMENT },
-      { name: "Betting Wallet", type: WalletType.BILL_PAYMENT },
-    ];
-
-      await Promise.all(
-        wallets.map((wallet) =>
-          this.walletService.createWallet(user.id, { 
-            name: wallet.name, 
-            type: wallet.type, 
-            customerId: walletResult.customer.id 
-          })
-        )
-      );
-
-      // Update user profile
-      return this.usersService.updateUser(user.id, {
-      ...data,
-      accountName: walletResult.wallet.accountName,
-      accountNumber: Number(walletResult.wallet.accountNumber),
-      bank: walletResult.wallet.bankName,
-    });
-    } catch (error) {
-      this.logger.error('Profile completion failed:', error);
-      throw new BadRequestException('Failed to complete profile setup');
+  async remove(id: string): Promise<void> {
+    const result = await this.userRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`User with ID ${id} not found`);
     }
   }
 
-  async updatePassword(userId: string, newPassword: string) {
-    const user = await this.usersService.findById(userId);
-    if (!user) throw new NotFoundException('User not found');
-
-    // Allow password updates
-
-    const hashedPassword = await bcrypt.hash(newPassword, 12);
-    return this.usersService.updateUser(userId, { password: hashedPassword });
+  async updateLastLogin(id: string): Promise<void> {
+    await this.userRepository.update(id, { lastLoginAt: new Date() });
   }
 
-  async getOnboardingStatus(userId: string) {
-    const user = await this.usersService.findById(userId);
-    if (!user) throw new NotFoundException('User not found');
+  async storeVerificationCode(
+    identifier: string,
+    type: 'email' | 'phone',
+    category: string,
+    code: string,
+  ): Promise<void> {
+    const user = await this.userRepository.findOneBy(
+      type === 'email' ? { email: identifier } : { phone: identifier },
+    );
 
-    return {
-      emailVerified: !!user.email && user.isEmailVerified,
-      phoneVerified: !!user.phone && user.isPhoneVerified,
-      profileCompleted: !!user.firstName && !!user.lastName && !!user.bvn,
-      walletCreated: !!user.accountNumber,
-      passwordSet: !!user.password,
+    const newCode = {
+      id: this.generateRandomString(),
+      category,
+      code,
+      expires: this.getExpiryDate(),
     };
-  }
 
-  async adminLogin(email: string, password: string) {
-    const admin = await this.usersService.findByEmail(email);
-    if (!admin || !admin.password || !(await bcrypt.compare(password, admin.password))) {
-      throw new UnauthorizedException('Invalid admin credentials');
-    }
-    return { token: this.generateToken(admin) };
-  }
-
-  async login({ identifier, password }: LoginDto) {
-    // Support email, phone, or username login
-    let user = await this.usersService.findByEmailOrPhone(identifier, identifier);
-    
-    // If not found by email/phone, try username
     if (!user) {
-      user = await this.usersService.findByUsername(identifier);
-    }
-    
-    if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    const token = this.generateToken(user);
-    const { password: _, ...result } = user;
-    return { user: result, token };
-  }
-
-  async validateUser(identifier: string, password: string): Promise<Partial<User> | null> {
-    const user = await this.usersService.findByEmailOrPhone(identifier, identifier);
-    if (user && user.password && await bcrypt.compare(password, user.password)) {
-      const { password: _, ...result } = user;
-      
-      return result;
-    }
-
-    return null;
-  }
-
-  async initiateResetPin(identifier: string) {
-    const type = this.getContactType(identifier);
-    const user = await this.usersService.findByEmailOrPhone(identifier, identifier);
-    if (!user) throw new NotFoundException('User not found');
-
-    await this.sendCodeService.sendVerificationCode(identifier, user.firstName || '', code, type);
-    await this.usersService.storeVerificationCode(identifier, type, 'reset-pin', code);
-    await this.sendCodeService.sendVerificationCode(identifier, user.firstName? user.firstName : "", code, type);
-
-    return { message: 'Verification code sent' };
-  }
-
-  async resetPin(identifier: string, code: string, pin: string) {
-    const type = this.getContactType(identifier);
-    const isValid = await this.usersService.verifyCode(identifier, type, code);
-
-    if (!isValid) throw new BadRequestException('Invalid or expired verification code');
-
-    const user = await this.usersService.findByEmailOrPhone(identifier, identifier);
-    if (!user) throw new NotFoundException('User not found');
-
-    return this.updatePin(user.id, pin);
-  }
-
-  async initiateResetPassword(identifier: string) {
-    const type = this.getContactType(identifier);
-    const user = await this.usersService.findByEmailOrPhone(identifier, identifier);
-    if (!user) throw new NotFoundException('User not found');
-
-    const code = this.generateCode();
-    await this.sendCodeService.sendVerificationCode(identifier, user.firstName || '', code, type);
-    await this.sendCodeService.sendVerificationCode(identifier, user.firstName? user.firstName : "", code, type);
-
-    return { message: 'Verification code sent' };
-  }
-
-  async resetPassword(identifier: string, code: string, newPassword: string) {
-    const type = this.getContactType(identifier);
-    const isValid = await this.usersService.verifyCode(identifier, type, code);
-
-    if (!isValid) throw new BadRequestException('Invalid or expired verification code');
-
-    const user = await this.usersService.findByEmailOrPhone(identifier, identifier);
-    if (!user) throw new NotFoundException('User not found');
-
-    return this.updatePassword(user.id, newPassword);
-  }
-
-  async setPin(userId: string, pin: string) {
-    const hashedPin = await bcrypt.hash(pin, 10);
-    return this.usersService.updateUser(userId, { pin: hashedPin });
-  }
-
-  async verifyPin(userId: string, pin: string) {
-    const user = await this.usersService.findById(userId);
-    if (!user || !user.pin || !(await bcrypt.compare(pin, user.pin))) {
-      throw new UnauthorizedException('Invalid pin');
-    }
-    return { message: 'Pin verified' };
-  }
-
-  async updatePin(userId: string, newPin: string) {
-    return this.setPin(userId, newPin);
-  }
-
-  private generateToken(user: User): string {
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    return this.jwtService.sign(payload);
-  }
-
-  private generateCode(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  }
-
-  async verifyToken(token: string) {
-    try {
-      return this.jwtService.verify(token);
-    } catch {
-      throw new UnauthorizedException('Invalid token');
+      const newUser = this.userRepository.create(
+        type === 'email'
+          ? { email: identifier, codes: [newCode] }
+          : { phone: identifier, codes: [newCode] },
+      );
+      await this.userRepository.save(newUser);
+    } else {
+      await this.userRepository.update(user.id, {
+        codes: [...(user.codes || []), newCode],
+      });
     }
   }
 
-  private getContactType(identifier: string): 'email' | 'phone' {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(identifier) ? 'email' : 'phone';
+  async verifyCode(
+    identifier: string,
+    type: 'email' | 'phone',
+    code: string,
+  ): Promise<boolean | null> {
+    const user = await this.userRepository.findOneBy(
+      type === 'email' ? { email: identifier } : { phone: identifier },
+    );
+
+    if (!user || !user.codes?.length) return false;
+
+    const now = new Date();
+    const match = user.codes.find((c) => c.code === code);
+
+    if (!match) return false;
+    if (match.expires < now) return null;
+
+    return true;
+  }
+
+  private generateRandomString(length = 10): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_@%&$#!';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      const index = Math.floor(Math.random() * chars.length);
+      result += chars[index];
+    }
+    return result;
+  }
+
+  private getExpiryDate(minutes = 30): Date {
+    const date = new Date();
+    date.setMinutes(date.getMinutes() + minutes);
+    return date;
   }
 }

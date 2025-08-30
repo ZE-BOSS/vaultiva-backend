@@ -176,11 +176,15 @@ export class TransfersService {
     const dueTransfers = await this.scheduledTransferRepository.find({
       where: {
         status: ScheduleStatus.ACTIVE,
-        nextExecutionDate: LessThanOrEqual(new Date()),
       },
     });
 
-    for (const scheduledTransfer of dueTransfers) {
+    const now = new Date();
+    const filteredTransfers = dueTransfers.filter(
+      transfer => transfer.nextExecutionDate <= now
+    );
+
+    for (const scheduledTransfer of filteredTransfers) {
       try {
         await this.executeScheduledTransfer(scheduledTransfer);
       } catch (error) {
@@ -221,6 +225,11 @@ export class TransfersService {
         scheduledTransfer.status = ScheduleStatus.COMPLETED;
       }
 
+      // Check if end date reached
+      if (scheduledTransfer.endDate && new Date() >= scheduledTransfer.endDate) {
+        scheduledTransfer.status = ScheduleStatus.COMPLETED;
+      }
+
       await this.scheduledTransferRepository.save(scheduledTransfer);
     } catch (error) {
       this.logger.error(`Scheduled transfer execution failed:`, error);
@@ -229,8 +238,8 @@ export class TransfersService {
       await this.notificationsService.create({
         title: 'Scheduled Transfer Failed',
         message: `Your scheduled transfer "${scheduledTransfer.name}" failed to execute`,
-        type: 'GENERAL' as any,
-        channel: 'IN_APP' as any,
+        type: NotificationType.GENERAL,
+        channel: NotificationChannel.IN_APP,
         userId: scheduledTransfer.userId,
       });
     }

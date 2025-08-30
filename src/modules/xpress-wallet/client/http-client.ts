@@ -50,19 +50,30 @@ export class HttpClient {
     response: LoginResponse; 
     tokens: AuthTokens;
   }> {
-    const response = await this.client.post<LoginResponse>('/auth/login', credentials);
+    try {
+      const response = await this.client.post<LoginResponse>('/auth/login', credentials);
 
-    const tokens: AuthTokens = {
-      accessToken: response.headers['x-access-token'],
-      refreshToken: response.headers['x-refresh-token']
-    };
+      const tokens: AuthTokens = {
+        accessToken: response.headers['x-access-token'] || '',
+        refreshToken: response.headers['x-refresh-token'] || ''
+      };
 
-    this.setTokens(tokens);
+      if (!tokens.accessToken || !tokens.refreshToken) {
+        throw new Error('Authentication tokens not received');
+      }
 
-    return {
-      response: response.data,
-      tokens
-    };
+      this.setTokens(tokens);
+
+      return {
+        response: response.data,
+        tokens
+      };
+    } catch (error) {
+      throw new XpressWalletError(
+        error.response?.data?.message || 'Login failed',
+        error.response?.status
+      );
+    }
   }
 
   setTokens(tokens: AuthTokens): void {

@@ -13,15 +13,16 @@ import { CrowdfundingService } from './crowdfunding.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { ContributeDto } from './dto/contribute.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { Public } from '../common/decorators/public.decorator';
 
 @ApiTags('Crowdfunding')
 @Controller('crowdfunding')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class CrowdfundingController {
   constructor(private readonly crowdfundingService: CrowdfundingService) {}
 
   @Post('campaigns')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create crowdfunding campaign' })
   @ApiResponse({ status: 201, description: 'Campaign created successfully' })
   createCampaign(@Request() req, @Body() createCampaignDto: CreateCampaignDto) {
@@ -29,6 +30,7 @@ export class CrowdfundingController {
   }
 
   @Get('campaigns')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get user campaigns' })
   @ApiResponse({ status: 200, description: 'Campaigns retrieved successfully' })
   findUserCampaigns(
@@ -40,6 +42,7 @@ export class CrowdfundingController {
   }
 
   @Get('campaigns/public/:shareableLink')
+  @Public()
   @ApiOperation({ summary: 'Get public campaign by shareable link' })
   @ApiResponse({ status: 200, description: 'Campaign retrieved successfully' })
   getPublicCampaign(@Param('shareableLink') shareableLink: string) {
@@ -47,6 +50,7 @@ export class CrowdfundingController {
   }
 
   @Get('campaigns/:id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get campaign by ID' })
   @ApiResponse({ status: 200, description: 'Campaign retrieved successfully' })
   findOne(@Param('id') id: string, @Request() req) {
@@ -54,6 +58,7 @@ export class CrowdfundingController {
   }
 
   @Post('campaigns/:id/contribute')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Contribute to campaign' })
   @ApiResponse({ status: 200, description: 'Contribution successful' })
   contribute(
@@ -65,6 +70,7 @@ export class CrowdfundingController {
   }
 
   @Get('campaigns/:id/contributions')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get campaign contributions' })
   @ApiResponse({ status: 200, description: 'Contributions retrieved successfully' })
   getContributions(

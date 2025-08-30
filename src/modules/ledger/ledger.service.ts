@@ -107,7 +107,7 @@ export class LedgerService {
       totalCredits: 0,
       totalDebits: 0,
       netBalance: 0,
-      byProvider: {} as any,
+      byProvider: {} as Record<LedgerProvider, { credits: number; debits: number; net: number }>,
     };
 
     // Initialize provider summaries
@@ -129,7 +129,8 @@ export class LedgerService {
 
     summary.netBalance = summary.totalCredits - summary.totalDebits;
 
-    Object.keys(summary.byProvider).forEach(provider => {
+    Object.keys(summary.byProvider).forEach(providerKey => {
+      const provider = providerKey as LedgerProvider;
       const providerData = summary.byProvider[provider];
       providerData.net = providerData.credits - providerData.debits;
     });

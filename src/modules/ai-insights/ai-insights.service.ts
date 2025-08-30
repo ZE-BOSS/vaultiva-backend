@@ -147,7 +147,8 @@ export class AiInsightsService {
       });
     }
 
-    if (spendingData.categoryBreakdown.entertainment > spendingData.totalSpending * 0.3) {
+    if (spendingData.categoryBreakdown?.entertainment && 
+        spendingData.categoryBreakdown.entertainment > spendingData.totalSpending * 0.3) {
       insights.push({
         type: InsightType.CATEGORY_ANALYSIS,
         priority: InsightPriority.MEDIUM,

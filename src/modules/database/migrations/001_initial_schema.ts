@@ -36,6 +36,50 @@ export class InitialSchema1703001000000 implements MigrationInterface {
       )
     `);
 
+    // Bills table
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS "bills" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "name" varchar NOT NULL,
+        "billerCode" varchar NOT NULL,
+        "itemCode" varchar NOT NULL,
+        "category" varchar NOT NULL,
+        "provider" varchar NOT NULL,
+        "fee" decimal(10,2) NOT NULL,
+        "minimumAmount" decimal(10,2),
+        "maximumAmount" decimal(10,2),
+        "isActive" boolean DEFAULT true,
+        "hasDowntime" boolean DEFAULT false,
+        "downtimeStart" timestamp,
+        "downtimeEnd" timestamp,
+        "metadata" jsonb,
+        "createdAt" timestamp DEFAULT now(),
+        "updatedAt" timestamp DEFAULT now()
+      )
+    `);
+
+    // Bill payments table
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS "bill_payments" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "amount" decimal(15,2) NOT NULL,
+        "customer" varchar NOT NULL,
+        "status" varchar DEFAULT 'pending',
+        "reference" varchar NOT NULL,
+        "providerReference" varchar,
+        "failureReason" varchar,
+        "metadata" jsonb,
+        "userId" uuid NOT NULL,
+        "billId" uuid NOT NULL,
+        "walletId" uuid NOT NULL,
+        "createdAt" timestamp DEFAULT now(),
+        "updatedAt" timestamp DEFAULT now(),
+        FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE,
+        FOREIGN KEY ("billId") REFERENCES "bills"("id") ON DELETE CASCADE,
+        FOREIGN KEY ("walletId") REFERENCES "wallets"("id") ON DELETE CASCADE
+      )
+    `);
+
     // Wallets table
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "wallets" (

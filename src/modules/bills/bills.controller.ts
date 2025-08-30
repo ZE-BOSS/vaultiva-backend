@@ -37,7 +37,7 @@ export class BillsController {
     return this.billsService.getBillers(category);
   }
 
-  @Get(':code')
+  @Get('plans/:code')
   @ApiOperation({ summary: 'Get all available bill plans' })
   @ApiResponse({ status: 200, description: 'Plans retrieved successfully' })
   findPlans(@Param('code') code: string) {
@@ -49,7 +49,7 @@ export class BillsController {
   @ApiResponse({ status: 200, description: 'Bill payment successfully' })
   @ApiResponse({ status: 404, description: 'Bill not found' })
   payBill(@Body() body: any, @Req() req) {
-    const { recurring, duration, walletId, ...prop } = body
+    const { recurring = false, duration = 0, walletId, ...prop } = body;
 
     return this.billsService.payBill(req.user.id, walletId, prop, recurring, duration);
   }

@@ -59,11 +59,12 @@ export class UsersService {
   async findByEmailOrPhone(email?: string, phone?: string): Promise<User | null> {
     if (!email && !phone) return null;
 
+    const whereConditions = [];
+    if (email) whereConditions.push({ email });
+    if (phone) whereConditions.push({ phone });
+
     return this.userRepository.findOne({
-      where: [
-        ...(email ? [{ email }] : []),
-        ...(phone ? [{ phone }] : []),
-      ],
+      where: whereConditions,
     });
   }
 

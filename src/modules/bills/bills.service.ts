@@ -66,7 +66,7 @@ export class BillsService {
   async verifyServiceAccount(code: string, customer: number) {
     const response = await flutterwave.getV3BillItemsCb141Validate({ 
       code, 
-      customer,
+      customer: customer.toString(),
       Authorization: `Bearer ${this.config.get('FLUTTERWAVE_SECRET_KEY')}`
     });
     return response.data;
@@ -75,26 +75,18 @@ export class BillsService {
   /**
    * Pay a bill (core flow)
    */
-  async payBill(userId: string, walletId: string, dto: BillPaymentDto, recurring: boolean, duration: number) {
+  async payBill(userId: string, walletId: string, dto: BillPaymentDto, recurring: boolean = false, duration: number = 0) {
     try {
       const response = await this.paymentsService.payBill(userId, walletId, dto);
 
-      if(recurring) {
+      if (recurring && duration > 0) {
         await this.recurringService.createRecurringPayment({
-        userId: userId,
-        transactionId: response.id,
-        amount: response.amount,
-        duration,
-        frequency: 
-          duration == 1?
-            RecurrenceFrequency.DAILY
-          : duration == 7?
-            RecurrenceFrequency.WEEKLY 
-          : duration == 30 || duration == 31?
-            RecurrenceFrequency.MONTHLY
-          : RecurrenceFrequency.CUSTOM
-        ,
-        status: RecurringStatus.ACTIVE,
+          userId: userId,
+          transactionId: response.id,
+          amount: response.amount,
+          duration,
+          frequency: this.determineFrequency(duration),
+          status: RecurringStatus.ACTIVE,
         });
       }
 
@@ -104,6 +96,13 @@ export class BillsService {
 
       throw new BadRequestException(`Bill payment failed: ${err.message}`);
     }
+  }
+
+  private determineFrequency(duration: number): RecurrenceFrequency {
+    if (duration === 1) return RecurrenceFrequency.DAILY;
+    if (duration === 7) return RecurrenceFrequency.WEEKLY;
+    if (duration === 30 || duration === 31) return RecurrenceFrequency.MONTHLY;
+    return RecurrenceFrequency.CUSTOM;
   }
 
   async checkServiceDowntime(billerCode: string): Promise<boolean> {

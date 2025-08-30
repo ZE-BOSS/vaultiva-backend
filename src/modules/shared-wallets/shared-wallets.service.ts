@@ -102,19 +102,35 @@ export class SharedWalletsService {
   }
 
   async findUserSharedWallets(userId: string, page: number = 1, limit: number = 20) {
-    const [sharedWallets, total] = await this.sharedWalletRepository.findAndCount({
-      where: [
-        { creatorId: userId },
-        { members: { userId } },
-      ],
+    // First get shared wallets where user is creator
+    const creatorWallets = await this.sharedWalletRepository.find({
+      where: { creatorId: userId },
       relations: ['members', 'members.user', 'wallet'],
-      order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
     });
 
+    // Then get shared wallets where user is a member
+    const memberWallets = await this.sharedWalletRepository
+      .createQueryBuilder('sw')
+      .leftJoinAndSelect('sw.members', 'member')
+      .leftJoinAndSelect('sw.wallet', 'wallet')
+      .leftJoinAndSelect('member.user', 'user')
+      .where('member.userId = :userId', { userId })
+      .getMany();
+
+    // Combine and deduplicate
+    const allWallets = [...creatorWallets, ...memberWallets];
+    const uniqueWallets = allWallets.filter((wallet, index, self) => 
+      index === self.findIndex(w => w.id === wallet.id)
+    );
+
+    // Apply pagination
+    const total = uniqueWallets.length;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedWallets = uniqueWallets.slice(startIndex, endIndex);
+
     return {
-      sharedWallets,
+      sharedWallets: paginatedWallets,
       pagination: {
         page,
         limit,
@@ -122,6 +138,27 @@ export class SharedWalletsService {
         pages: Math.ceil(total / limit),
       },
     };
+  }
+
+  async findOne(id: string, userId: string): Promise<SharedWallet> {
+    const sharedWallet = await this.sharedWalletRepository.findOne({
+      where: { id },
+      relations: ['members', 'members.user', 'wallet', 'creator'],
+    });
+
+    if (!sharedWallet) {
+      throw new NotFoundException('Shared wallet not found');
+    }
+
+    // Check if user has access
+    const hasAccess = sharedWallet.creatorId === userId || 
+      sharedWallet.members.some(m => m.userId === userId);
+
+    if (!hasAccess) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    return sharedWallet;
   }
 
   async initiateTransaction(
@@ -244,27 +281,6 @@ export class SharedWalletsService {
     await this.transactionRepository.update(transactionId, {
       status: SharedTransactionStatus.EXECUTED,
     });
-  }
-
-  private async findOne(id: string, userId: string): Promise<SharedWallet> {
-    const sharedWallet = await this.sharedWalletRepository.findOne({
-      where: { id },
-      relations: ['members', 'members.user', 'wallet', 'creator'],
-    });
-
-    if (!sharedWallet) {
-      throw new NotFoundException('Shared wallet not found');
-    }
-
-    // Check if user has access
-    const hasAccess = sharedWallet.creatorId === userId || 
-      sharedWallet.members.some(m => m.userId === userId);
-
-    if (!hasAccess) {
-      throw new ForbiddenException('Access denied');
-    }
-
-    return sharedWallet;
   }
 
   private generateReference(): string {

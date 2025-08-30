@@ -163,29 +163,29 @@ export class PaymentsService {
         const account_info = await this.getAccountInfo();
 
         // Move funds from XpressWallet to Flutterwave
-      const xdata = await this.xpressService.transfer.customerBankTransfer({
-        customerId: wallet.customerId,
-        accountName: account_info.account_name,
-        accountNumber: account_info.account_number,
-        sortCode: account_info.bank_code,
-        amount: amount,
-        narration: `Bill Payment ${narration}`,
-      });
+        const xdata = await this.xpressService.transfer.customerBankTransfer({
+          customerId: wallet.customerId,
+          accountName: account_info.account_name,
+          accountNumber: account_info.account_number,
+          sortCode: account_info.bank_code,
+          amount: amount,
+          narration: `Bill Payment ${narration}`,
+        });
 
         if(!xdata.status || !xdata.transfer) {
           return { deducted: false, reason: xdata.message || 'Transfer failed' };
         }
 
         // Call Flutterwave Bills API
-      const fwResponse = await flutterwave.postV3BillersBiller_codeItemsItem_codePayment({
-        country: 'NG',
-        customer_id: customer,
-        amount: amount,
-        reference,
-        biller_code,
-        item_code,
-        Authorization: `Bearer ${this.config.get('FLUTTERWAVE_SECRET_KEY')}`
-      });
+        const fwResponse = await flutterwave.postV3BillersBiller_codeItemsItem_codePayment({
+          country: 'NG',
+          customer: customer,
+          amount: amount,
+          reference,
+          biller_code,
+          item_code,
+          Authorization: `Bearer ${this.config.get('FLUTTERWAVE_SECRET_KEY')}`
+        });
 
         if(fwResponse.status !== 200 || !fwResponse.data?.data) {
           return { deducted: false, reason: fwResponse.data?.message || 'Payment failed', status: fwResponse.data?.status };

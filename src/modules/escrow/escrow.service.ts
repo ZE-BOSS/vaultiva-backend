@@ -87,11 +87,13 @@ export class EscrowService {
   }
 
   async findUserEscrows(userId: string, page: number = 1, limit: number = 20) {
+    const whereConditions = [
+      { creatorId: userId },
+      { participants: { userId } },
+    ];
+
     const [escrows, total] = await this.escrowRepository.findAndCount({
-      where: [
-        { creatorId: userId },
-        { participants: { userId } },
-      ],
+      where: whereConditions,
       relations: ['participants', 'participants.user', 'wallet'],
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,

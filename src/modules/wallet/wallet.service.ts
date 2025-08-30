@@ -60,8 +60,9 @@ export class WalletService {
   }
 
   async findUserWalletsByType(userId: string, types: WalletType[]): Promise<Wallet[]> {
+    const whereConditions = types.map(type => ({ userId, type }));
     return this.walletRepository.find({
-      where: { userId, type: { $in: types } } as any,
+      where: whereConditions,
       relations: ['user'],
     });
   }
@@ -415,8 +416,16 @@ export class WalletService {
     const wallets = await this.findUserWallets(userId);
     const walletIds = wallets.map(w => w.id);
 
+    if (walletIds.length === 0) {
+      return {
+        transactions: [],
+        pagination: { page, limit, total: 0, pages: 0 },
+      };
+    }
+
+    const whereConditions = walletIds.map(id => ({ walletId: id }));
     const [transactions, total] = await this.transactionRepository.findAndCount({
-      where: { walletId: { $in: walletIds } } as any,
+      where: whereConditions,
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,

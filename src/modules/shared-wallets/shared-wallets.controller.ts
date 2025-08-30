@@ -39,6 +39,13 @@ export class SharedWalletsController {
     return this.sharedWalletsService.findUserSharedWallets(req.user.id, page, limit);
   }
 
+  @Get(':id')
+  @ApiOperation({ summary: 'Get shared wallet by ID' })
+  @ApiResponse({ status: 200, description: 'Shared wallet retrieved successfully' })
+  findOne(@Param('id') id: string, @Request() req) {
+    return this.sharedWalletsService.findOne(id, req.user.id);
+  }
+
   @Post(':id/transact')
   @ApiOperation({ summary: 'Initiate shared wallet transaction' })
   @ApiResponse({ status: 200, description: 'Transaction initiated successfully' })
