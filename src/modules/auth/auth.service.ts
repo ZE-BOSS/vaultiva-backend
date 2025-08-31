@@ -171,7 +171,6 @@ export class AuthService {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 }
-```
 
 
   async updateLastLogin(id: string): Promise<void> {
