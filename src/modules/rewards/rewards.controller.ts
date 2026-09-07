@@ -10,6 +10,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { RewardsService } from './rewards.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { PositiveIntPipe } from '../common/pipes/positive-int.pipe';
 
 @ApiTags('Rewards')
 @Controller('rewards')
@@ -23,8 +24,8 @@ export class RewardsController {
   @ApiResponse({ status: 200, description: 'Rewards retrieved successfully' })
   getUserRewards(
     @Request() req,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @Query('page', new PositiveIntPipe(1)) page: number,
+    @Query('limit', new PositiveIntPipe(20, 100)) limit: number,
   ) {
     return this.rewardsService.getUserRewards(req.user.id, page, limit);
   }

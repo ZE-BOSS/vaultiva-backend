@@ -13,6 +13,7 @@ import { SharedWalletsService } from './shared-wallets.service';
 import { CreateSharedWalletDto } from './dto/create-shared-wallet.dto';
 import { CreateSharedWalletTransactionDto } from './dto/create-transaction.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { PositiveIntPipe } from '../common/pipes/positive-int.pipe';
 
 @ApiTags('Shared Wallets')
 @Controller('shared-wallets')
@@ -33,8 +34,8 @@ export class SharedWalletsController {
   @ApiResponse({ status: 200, description: 'Shared wallets retrieved successfully' })
   findAll(
     @Request() req,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @Query('page', new PositiveIntPipe(1)) page: number,
+    @Query('limit', new PositiveIntPipe(20, 100)) limit: number,
   ) {
     return this.sharedWalletsService.findUserSharedWallets(req.user.id, page, limit);
   }

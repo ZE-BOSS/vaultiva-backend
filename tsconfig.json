@@ -18,12 +18,14 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "esModuleInterop": true,
+    "resolveJsonModule": true,
     "paths": {
       "@/*": ["src/*"],
       "@/common/*": ["src/modules/common/*"],
       "@/config/*": ["src/config/*"],
       "@/database/*": ["src/database/*"],
-      "@/modules/*": ["src/modules/*"]
+      "@/modules/*": ["src/modules/*"],
+      "@api/flutterwave-v3": [".api/apis/flutterwave-v3/index.ts"]
     }
   }
 }

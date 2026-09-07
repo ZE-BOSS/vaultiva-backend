@@ -1,4 +1,13 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsString, IsOptional, Min, IsDateString } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsObject,
+  IsString,
+  IsOptional,
+  Min,
+  IsDateString,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ScheduleFrequency } from '../entities/scheduled-transfer.entity';
 
@@ -31,8 +40,11 @@ export class CreateScheduledTransferDto {
   @IsNumber()
   maxExecutions?: number;
 
+  // Same whitelist trap as CreateTransferDto: without a validator this property
+  // is stripped and then rejected as unknown.
   @ApiProperty({ type: Object })
-  transferTemplate: any;
+  @IsObject()
+  transferTemplate: Record<string, unknown>;
 
   @ApiProperty({ required: false })
   @IsOptional()

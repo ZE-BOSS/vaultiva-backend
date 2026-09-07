@@ -12,6 +12,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { PositiveIntPipe } from '../common/pipes/positive-int.pipe';
 
 @ApiTags('Notifications')
 @Controller('notifications')
@@ -25,8 +26,8 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: 'Notifications retrieved successfully' })
   findAll(
     @Request() req,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @Query('page', new PositiveIntPipe(1)) page: number,
+    @Query('limit', new PositiveIntPipe(20, 100)) limit: number,
   ) {
     return this.notificationsService.findUserNotifications(req.user.id, page, limit);
   }

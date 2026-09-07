@@ -1,4 +1,12 @@
-import { Injectable, NotFoundException, BadRequestException, Logger, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ServiceUnavailableException,
+  Logger,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RecurrenceFrequency, RecurringPayment, RecurringStatus } from './entities/recurring-payment.entity';
@@ -27,12 +35,27 @@ export class BillsService {
   ) {}
 
   /**
+   * Flutterwave's bill endpoints are the only source for providers, billers and
+   * plans. Without a secret key the generated client throws a raw error and the
+   * request surfaces as an opaque 500, so fail with something actionable instead.
+   */
+  private flutterwaveAuth(): string {
+    const key = this.config.get<string>('FLUTTERWAVE_SECRET_KEY');
+    if (!key) {
+      throw new ServiceUnavailableException(
+        'Bill payments are unavailable: FLUTTERWAVE_SECRET_KEY is not configured.',
+      );
+    }
+    return `Bearer ${key}`;
+  }
+
+  /**
    * Fetch available providers from Flutterwave
    */
   async getProviders(): Promise<any> {
     const response = await flutterwave.getV3TopBillCategories({
       country: "NG",
-      Authorization: `Bearer ${this.config.get('FLUTTERWAVE_SECRET_KEY')}`
+      Authorization: this.flutterwaveAuth()
     });
     return response.data;
   }
@@ -44,7 +67,7 @@ export class BillsService {
     const response = await flutterwave.getV3BillsCategoryBillers({
       country: "NG",
       category,
-      Authorization: `Bearer ${this.config.get('FLUTTERWAVE_SECRET_KEY')}`
+      Authorization: this.flutterwaveAuth()
     });
     return response.data;
   }
@@ -55,7 +78,7 @@ export class BillsService {
   async getPlans(code: string): Promise<any> {
     const response = await flutterwave.getV3BillersBiller_codeItems({
       biller_code: code,
-      Authorization: `Bearer ${this.config.get('FLUTTERWAVE_SECRET_KEY')}`
+      Authorization: this.flutterwaveAuth()
     });
     return response.data;
   }
@@ -66,8 +89,8 @@ export class BillsService {
   async verifyServiceAccount(code: string, customer: number) {
     const response = await flutterwave.getV3BillItemsCb141Validate({ 
       code, 
-      customer: customer.toString(),
-      Authorization: `Bearer ${this.config.get('FLUTTERWAVE_SECRET_KEY')}`
+      customer,
+      Authorization: this.flutterwaveAuth()
     });
     return response.data;
   }

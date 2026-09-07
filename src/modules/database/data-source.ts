@@ -1,17 +1,23 @@
 import { DataSource } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
+import { config as loadEnv } from 'dotenv';
+import { join } from 'path';
 
-const configService = new ConfigService();
+// The TypeORM CLI boots this file directly, outside the Nest DI container, so
+// nothing has loaded .env yet — ConfigService alone would read undefined.
+loadEnv();
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
-  host: configService.get('DB_HOST'),
-  port: configService.get('DB_PORT'),
-  username: configService.get('DB_USERNAME'),
-  password: configService.get('DB_PASSWORD'),
-  database: configService.get('DB_NAME'),
-  entities: ['src/**/*.entity.ts'],
-  migrations: ['src/database/migrations/*.ts'],
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT ?? '5432', 10),
+  username: process.env.DB_USERNAME,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  entities: [join(__dirname, '/../../**/*.entity{.ts,.js}')],
+  // The migrations live here, in `src/modules/database/migrations`. This
+  // previously pointed at `src/database/migrations`, which does not exist, so
+  // `migration:run` found nothing and reported success.
+  migrations: [join(__dirname, '/migrations/*{.ts,.js}')],
   synchronize: false,
-  logging: configService.get('NODE_ENV') === 'development',
+  logging: process.env.NODE_ENV === 'development',
 });

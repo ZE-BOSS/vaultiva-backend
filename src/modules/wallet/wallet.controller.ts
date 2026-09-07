@@ -15,6 +15,7 @@ import { WithdrawDto } from './dto/withdraw.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { Public } from '../common/decorators/public.decorator';
 import { TransactionType } from './entities/transaction.entity';
+import { PositiveIntPipe } from '../common/pipes/positive-int.pipe';
 
 @ApiTags('Wallet')
 @Controller('wallet')
@@ -42,8 +43,8 @@ export class WalletController {
   @ApiResponse({ status: 200, description: 'Transaction history retrieved successfully' })
   getTransactionHistory(
     @Request() req,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @Query('page', new PositiveIntPipe(1)) page: number,
+    @Query('limit', new PositiveIntPipe(20, 100)) limit: number,
   ) {
     return this.walletService.getTransactionHistory(req.user.id, page, limit);
   }

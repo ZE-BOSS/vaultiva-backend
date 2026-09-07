@@ -34,8 +34,10 @@ export class LedgerEntry {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  // Indexed by the class-level @Index(['reference']) above. Declaring it here as
+  // well produced a second CREATE INDEX with the same generated name, which made
+  // schema synchronisation fail outright.
   @Column()
-  @Index()
   reference: string;
 
   @Column({ type: 'enum', enum: LedgerEntryType })

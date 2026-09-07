@@ -10,6 +10,7 @@ import * as winston from 'winston';
 
 import { DatabaseConfig } from './config/database.config';
 import { RedisConfig } from './config/redis.config';
+import { validateEnv } from './config/env.validation';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { UsersModule } from '@/modules/users/users.module';
 import { WalletModule } from '@/modules/wallet/wallet.module';
@@ -33,6 +34,7 @@ import { TransfersModule } from './modules/transfers/transfers.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+      validate: validateEnv,
     }),
 
     // Database

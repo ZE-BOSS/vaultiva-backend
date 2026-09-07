@@ -58,6 +58,23 @@ export class InitialSchema1703001000000 implements MigrationInterface {
       )
     `);
 
+    // Wallets table — must precede bill_payments, which has a FK to it.
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS "wallets" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        "customerId" varchar NOT NULL,
+        "balance" decimal(15,2) DEFAULT 0,
+        "type" varchar DEFAULT 'main',
+        "name" varchar NOT NULL,
+        "currency" varchar DEFAULT 'NGN',
+        "isActive" boolean DEFAULT true,
+        "userId" uuid NOT NULL,
+        "createdAt" timestamp DEFAULT now(),
+        "updatedAt" timestamp DEFAULT now(),
+        FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE
+      )
+    `);
+
     // Bill payments table
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "bill_payments" (
@@ -77,23 +94,6 @@ export class InitialSchema1703001000000 implements MigrationInterface {
         FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE,
         FOREIGN KEY ("billId") REFERENCES "bills"("id") ON DELETE CASCADE,
         FOREIGN KEY ("walletId") REFERENCES "wallets"("id") ON DELETE CASCADE
-      )
-    `);
-
-    // Wallets table
-    await queryRunner.query(`
-      CREATE TABLE IF NOT EXISTS "wallets" (
-        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        "customerId" varchar NOT NULL,
-        "balance" decimal(15,2) DEFAULT 0,
-        "type" varchar DEFAULT 'main',
-        "name" varchar NOT NULL,
-        "currency" varchar DEFAULT 'NGN',
-        "isActive" boolean DEFAULT true,
-        "userId" uuid NOT NULL,
-        "createdAt" timestamp DEFAULT now(),
-        "updatedAt" timestamp DEFAULT now(),
-        FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE
       )
     `);
 

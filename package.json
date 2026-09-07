@@ -16,16 +16,13 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "typeorm": "typeorm-ts-node-commonjs",
+    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
     "migration:generate": "npm run typeorm -- migration:generate -d src/modules/database/data-source.ts",
     "migration:run": "npm run typeorm -- migration:run -d src/modules/database/data-source.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d src/modules/database/data-source.ts",
     "seed": "ts-node src/database/seeds/seed.ts"
   },
   "dependencies": {
-    "@api/flutterwave-v3": "file:.api/apis/flutterwave-v3",
-    "@api/flutterwavedoc": "file:.api/apis/flutterwavedoc",
-    "@api/xpress-wallet": "file:.api/apis/xpress-wallet",
     "@nestjs/axios": "^4.0.0",
     "@nestjs/bullmq": "^10.1.0",
     "@nestjs/common": "^10.3.0",
@@ -63,7 +60,9 @@
     "typeorm": "^0.3.19",
     "uuid": "^9.0.1",
     "winston": "^3.11.0",
-    "zeptomail": "^6.2.1"
+    "zeptomail": "^6.2.1",
+    "oas": "^20.11.0",
+    "json-schema-to-ts": "^2.8.0-beta.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.0",
@@ -110,6 +109,14 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@/common/(.*)$": "<rootDir>/modules/common/$1",
+      "^@/config/(.*)$": "<rootDir>/config/$1",
+      "^@/database/(.*)$": "<rootDir>/database/$1",
+      "^@/modules/(.*)$": "<rootDir>/modules/$1",
+      "^@/(.*)$": "<rootDir>/$1",
+      "^@api/flutterwave-v3$": "<rootDir>/../.api/apis/flutterwave-v3/index.ts"
+    }
   }
 }

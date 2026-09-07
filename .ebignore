@@ -1,0 +1,29 @@
+# When .ebignore exists the EB CLI uses it INSTEAD of .gitignore, so every
+# exclusion the deployment needs must be repeated here. Getting this wrong is how
+# a .env full of live payment keys ends up on a server bundle.
+
+.env
+.env.*
+!.env.example
+
+node_modules/
+src/
+test/
+scripts/
+logs/
+coverage/
+.git/
+.vscode/
+*.log
+api.out.log
+api.err.log
+
+# Vendored OpenAPI sources: already bundled into dist/main.js by webpack.
+.api/
+*.json.bak
+flutterwave-v3.json
+xpress-wallet.json
+
+# Docs
+*.md
+!README.md

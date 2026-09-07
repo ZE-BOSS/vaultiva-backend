@@ -12,6 +12,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles, Role } from '../common/decorators/roles.decorator';
 import { LedgerProvider } from './entities/ledger-entry.entity';
+import { PositiveIntPipe } from '../common/pipes/positive-int.pipe';
 
 @ApiTags('Ledger')
 @Controller('ledger')
@@ -25,11 +26,11 @@ export class LedgerController {
   @ApiResponse({ status: 200, description: 'Ledger entries retrieved successfully' })
   getLedgerEntries(
     @Request() req,
+    @Query('page', new PositiveIntPipe(1)) page: number,
+    @Query('limit', new PositiveIntPipe(50, 100)) limit: number,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('provider') provider?: LedgerProvider,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 50,
   ) {
     const start = startDate ? new Date(startDate) : undefined;
     const end = endDate ? new Date(endDate) : undefined;
@@ -56,12 +57,12 @@ export class LedgerController {
   @ApiOperation({ summary: 'Get all ledger entries (Admin)' })
   @ApiResponse({ status: 200, description: 'All ledger entries retrieved successfully' })
   getAllLedgerEntries(
+    @Query('page', new PositiveIntPipe(1)) page: number,
+    @Query('limit', new PositiveIntPipe(50, 100)) limit: number,
     @Query('userId') userId?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('provider') provider?: LedgerProvider,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 50,
   ) {
     const start = startDate ? new Date(startDate) : undefined;
     const end = endDate ? new Date(endDate) : undefined;
@@ -103,8 +104,8 @@ export class LedgerController {
   @ApiOperation({ summary: 'Get reconciliation history (Admin)' })
   @ApiResponse({ status: 200, description: 'Reconciliation history retrieved successfully' })
   getReconciliationHistory(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @Query('page', new PositiveIntPipe(1)) page: number,
+    @Query('limit', new PositiveIntPipe(20, 100)) limit: number,
   ) {
     return this.ledgerService.getReconciliationHistory(page, limit);
   }

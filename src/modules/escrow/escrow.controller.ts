@@ -15,6 +15,7 @@ import { EscrowService } from './escrow.service';
 import { CreateEscrowDto } from './dto/create-escrow.dto';
 import { UpdateEscrowDto } from './dto/update-escrow.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { PositiveIntPipe } from '../common/pipes/positive-int.pipe';
 
 @ApiTags('Escrow')
 @Controller('escrow')
@@ -35,8 +36,8 @@ export class EscrowController {
   @ApiResponse({ status: 200, description: 'Escrows retrieved successfully' })
   findAll(
     @Request() req,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @Query('page', new PositiveIntPipe(1)) page: number,
+    @Query('limit', new PositiveIntPipe(20, 100)) limit: number,
   ) {
     return this.escrowService.findUserEscrows(req.user.id, page, limit);
   }

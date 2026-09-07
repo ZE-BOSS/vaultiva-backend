@@ -13,6 +13,7 @@ import { Role } from '../../common/decorators/roles.decorator';
 import { Wallet } from '@/modules/wallet/entities/wallet.entity';
 import { Notification } from '@/modules/notifications/entities/notification.entity';
 
+export { Role };
 export { Role as UserRole };
 
 export interface VerificationCode {
@@ -34,41 +35,41 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: true })
   email: string;
 
   @Column({ unique: true, nullable: true })
   username: string;
 
-  @Column()
+  @Column({ nullable: true })
   @Exclude()
   password: string;
 
-  @Column()
+  @Column({ nullable: true })
   firstName: string;
 
-  @Column()
+  @Column({ nullable: true })
   lastName: string;
 
-  @Column()
-  bvn: number;
+  @Column({ nullable: true })
+  bvn: string;
 
-  @Column()
-  nin: number;
+  @Column({ nullable: true })
+  nin: string;
 
-  @Column()
-  accountNumber: number;
+  @Column({ nullable: true })
+  accountNumber: string;
 
-  @Column()
+  @Column({ nullable: true })
   bank: string;
 
-  @Column()
+  @Column({ nullable: true })
   accountName: string;
 
-  @Column()
+  @Column({ nullable: true })
   address: string;
 
-  @Column()
+  @Column({ nullable: true })
   dateOfBirth: string;
 
   @Column({ nullable: true, type: 'text' })
@@ -98,7 +99,7 @@ export class User {
   @Column({ nullable: true })
   lastLoginAt: Date;
 
-  @Column()
+  @Column({ nullable: true })
   loginDevice: string;
 
   @Column({ nullable: true })

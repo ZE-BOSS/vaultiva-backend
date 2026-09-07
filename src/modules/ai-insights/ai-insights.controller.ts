@@ -11,6 +11,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AiInsightsService } from './ai-insights.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { PositiveIntPipe } from '../common/pipes/positive-int.pipe';
 
 @ApiTags('AI Insights')
 @Controller('ai-insights')
@@ -31,8 +32,8 @@ export class AiInsightsController {
   @ApiResponse({ status: 200, description: 'Insights retrieved successfully' })
   getInsights(
     @Request() req,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @Query('page', new PositiveIntPipe(1)) page: number,
+    @Query('limit', new PositiveIntPipe(20, 100)) limit: number,
   ) {
     return this.aiInsightsService.getUserInsights(req.user.id, page, limit);
   }

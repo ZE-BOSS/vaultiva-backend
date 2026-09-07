@@ -17,6 +17,10 @@ import { CreateTransferDto } from './dto/create-transfer.dto';
 import { CreateScheduledTransferDto } from './dto/create-scheduled-transfer.dto';
 import { WalletService } from '../wallet/wallet.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import {
+  NotificationType,
+  NotificationChannel,
+} from '../notifications/entities/notification.entity';
 import { LedgerService } from '../ledger/ledger.service';
 import { LedgerEntryType, LedgerProvider } from '../ledger/entities/ledger-entry.entity';
 
@@ -43,7 +47,13 @@ export class TransfersService {
   async createTransfer(userId: string, createTransferDto: CreateTransferDto): Promise<Transfer> {
     // Check for bank downtime if transferring to bank
     if (createTransferDto.type === TransferType.WALLET_TO_BANK) {
-      const downtime = await this.checkBankDowntime(createTransferDto.destinationDetails.bankCode);
+      const { bankCode } = createTransferDto.destinationDetails;
+      if (!bankCode) {
+        throw new BadRequestException(
+          'destinationDetails.bankCode is required for a wallet-to-bank transfer',
+        );
+      }
+      const downtime = await this.checkBankDowntime(bankCode);
       if (downtime) {
         throw new BadRequestException(`Bank is currently experiencing downtime: ${downtime.description}`);
       }

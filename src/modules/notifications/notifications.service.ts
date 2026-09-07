@@ -48,17 +48,24 @@ export class NotificationsService {
     const token = this.configService.get('ZEPTO_API_KEY');
     const from = this.configService.get('ZEPTO_FROM');
 
-    try {
-      let client = new SendMailClient({url, token});
+    if (!token) {
+      throw new Error('ZEPTO_API_KEY is not configured — cannot send email');
+    }
 
-      client.sendMail({
-          "from": { "address": from, "name": "Vaultiva Team"},
-          "to": [{
-            "email_address": {"address": email}
-          }],
-          "subject": title,
-          "htmlbody": content,
-      })
+    try {
+      const client = new SendMailClient({ url, token });
+
+      // This await matters. The promise was previously left floating, so the
+      // surrounding try/catch could never see its rejection — it surfaced as an
+      // unhandled rejection, which terminates the Node process by default.
+      // Registration would return 201 and the server would then die, so the very
+      // next request got a 502.
+      await client.sendMail({
+        from: { address: from, name: 'Vaultiva Team' },
+        to: [{ email_address: { address: email } }],
+        subject: title,
+        htmlbody: content,
+      });
 
       this.logger.log(`Verification code sent to email: ${email}`);
     } catch (error) {

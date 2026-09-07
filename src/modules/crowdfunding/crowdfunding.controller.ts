@@ -14,6 +14,7 @@ import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { ContributeDto } from './dto/contribute.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { Public } from '../common/decorators/public.decorator';
+import { PositiveIntPipe } from '../common/pipes/positive-int.pipe';
 
 @ApiTags('Crowdfunding')
 @Controller('crowdfunding')
@@ -35,8 +36,8 @@ export class CrowdfundingController {
   @ApiResponse({ status: 200, description: 'Campaigns retrieved successfully' })
   findUserCampaigns(
     @Request() req,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @Query('page', new PositiveIntPipe(1)) page: number,
+    @Query('limit', new PositiveIntPipe(20, 100)) limit: number,
   ) {
     return this.crowdfundingService.findUserCampaigns(req.user.id, page, limit);
   }
@@ -75,8 +76,8 @@ export class CrowdfundingController {
   @ApiResponse({ status: 200, description: 'Contributions retrieved successfully' })
   getContributions(
     @Param('id') id: string,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @Query('page', new PositiveIntPipe(1)) page: number,
+    @Query('limit', new PositiveIntPipe(20, 100)) limit: number,
   ) {
     return this.crowdfundingService.getCampaignContributions(id, page, limit);
   }

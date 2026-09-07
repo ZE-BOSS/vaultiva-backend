@@ -15,6 +15,7 @@ import { TransfersService } from './transfers.service';
 import { CreateTransferDto } from './dto/create-transfer.dto';
 import { CreateScheduledTransferDto } from './dto/create-scheduled-transfer.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { PositiveIntPipe } from '../common/pipes/positive-int.pipe';
 
 @ApiTags('Transfers')
 @Controller('transfers')
@@ -35,8 +36,8 @@ export class TransfersController {
   @ApiResponse({ status: 200, description: 'Transfers retrieved successfully' })
   findAll(
     @Request() req,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @Query('page', new PositiveIntPipe(1)) page: number,
+    @Query('limit', new PositiveIntPipe(20, 100)) limit: number,
   ) {
     return this.transfersService.getUserTransfers(req.user.id, page, limit);
   }

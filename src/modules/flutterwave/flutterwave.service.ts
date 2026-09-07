@@ -63,13 +63,34 @@ export function getPlansByCategory(billers: Biller[], category: Category): Bille
 
 @Injectable()
 export class FlutterwaveService {
-  private flw: InstanceType<typeof Flutterwave>;
+  private _flw: InstanceType<typeof Flutterwave> | null = null;
 
-  constructor(private configService: ConfigService) {
-    this.flw = new Flutterwave(
-      configService.get<string>('FLUTTERWAVE_PUBLIC_KEY'),
-      configService.get<string>('FLUTTERWAVE_SECRET_KEY'),
-    );
+  constructor(private configService: ConfigService) {}
+
+  /**
+   * Built on first use, not in the constructor.
+   *
+   * `new Flutterwave(...)` throws "Public Key required" when the keys are unset.
+   * Doing that during construction meant the entire application refused to start
+   * without Flutterwave credentials — including flows that never touch payments.
+   * Now only the endpoints that actually call out fail, and with a message that
+   * says what to configure.
+   */
+  private get flw(): InstanceType<typeof Flutterwave> {
+    if (this._flw) return this._flw;
+
+    const publicKey = this.configService.get<string>('FLUTTERWAVE_PUBLIC_KEY');
+    const secretKey = this.configService.get<string>('FLUTTERWAVE_SECRET_KEY');
+
+    if (!publicKey || !secretKey) {
+      throw new BadRequestException(
+        'Flutterwave is not configured — set FLUTTERWAVE_PUBLIC_KEY and ' +
+          'FLUTTERWAVE_SECRET_KEY in .env',
+      );
+    }
+
+    this._flw = new Flutterwave(publicKey, secretKey);
+    return this._flw;
   }
 
   async getBillCategories(category: Category): Promise<Biller[]> {
@@ -106,17 +127,32 @@ export class FlutterwaveService {
     account_name: string; 
     bank_name: string 
   }> {
-    const account_number = this.configService.get('FLUTTER_WAVE_ACCOUNT_NUMBER');
-    const account_name = this.configService.get('FUTTER_WAVE_ACCOUNT_NAME');
-    const bank_name = this.configService.get('FLUTTER_WAVE_BANK_NAME');
-    const bank_code = this.configService.get('FLUTTER_WAVE_BANK_CODE');
+    // These were previously read as FLUTTER_WAVE_* / FUTTER_WAVE_* (sic) here while
+    // payments.service.ts read the same settlement account as FLUTTERWAVE_*.
+    // Whichever set was unset resolved to undefined and, because the values were
+    // passed through String(), reached Flutterwave as the literal text "undefined"
+    // rather than failing. One spelling now, and it fails fast when unset.
+    const account_number = this.configService.get<string>('FLUTTERWAVE_ACCOUNT_NUMBER');
+    const account_name = this.configService.get<string>('FLUTTERWAVE_ACCOUNT_NAME');
+    const bank_name = this.configService.get<string>('FLUTTERWAVE_BANK_NAME');
+    const bank_code = this.configService.get<string>('FLUTTERWAVE_BANK_CODE');
 
-    return({ 
-      account_number: String(account_number), 
-      bank_code: String(bank_code), 
-      account_name: String(account_name), 
-      bank_name: String(bank_name) 
+    const missing = Object.entries({
+      FLUTTERWAVE_ACCOUNT_NUMBER: account_number,
+      FLUTTERWAVE_ACCOUNT_NAME: account_name,
+      FLUTTERWAVE_BANK_NAME: bank_name,
+      FLUTTERWAVE_BANK_CODE: bank_code,
     })
+      .filter(([, v]) => !v)
+      .map(([k]) => k);
+
+    if (missing.length) {
+      throw new BadRequestException(
+        `Flutterwave settlement account is not configured: ${missing.join(', ')}`,
+      );
+    }
+
+    return { account_number, bank_code, account_name, bank_name };
   }
 
   async payBill(payload: BillPaymentData): Promise<Transaction> {
