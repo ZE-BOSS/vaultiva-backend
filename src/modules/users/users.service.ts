@@ -53,14 +53,18 @@ export class UsersService {
     return this.userRepository.findOneBy({ phone });
   }
 
+  async findByUsername(username: string): Promise<User | null> {
+    return this.userRepository.findOneBy({ username });
+  }
   async findByEmailOrPhone(email?: string, phone?: string): Promise<User | null> {
     if (!email && !phone) return null;
 
+    const whereConditions = [];
+    if (email) whereConditions.push({ email });
+    if (phone) whereConditions.push({ phone });
+
     return this.userRepository.findOne({
-      where: [
-        ...(email ? [{ email }] : []),
-        ...(phone ? [{ phone }] : []),
-      ],
+      where: whereConditions,
     });
   }
 

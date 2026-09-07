@@ -12,12 +12,11 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { SendMailClient } from "zeptomail";
 import { verifyMail, verifyMessage } from './template/verifymail.template';
-import { Axios } from 'axios';
+import axios from 'axios';
 
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
-  private readonly axios = new Axios()
 
   constructor(
     @InjectRepository(Notification)
@@ -25,7 +24,6 @@ export class NotificationsService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-
   }
 
   async sendVerificationCode(recipient: string, name = "", code: string, type: "email" | "phone") {
@@ -50,17 +48,24 @@ export class NotificationsService {
     const token = this.configService.get('ZEPTO_API_KEY');
     const from = this.configService.get('ZEPTO_FROM');
 
-    try {
-      let client = new SendMailClient({url, token});
+    if (!token) {
+      throw new Error('ZEPTO_API_KEY is not configured — cannot send email');
+    }
 
-      client.sendMail({
-          "from": { "address": from, "name": "Vaultiva Team"},
-          "to": [{
-            "email_address": {"address": email}
-          }],
-          "subject": title,
-          "htmlbody": content,
-      })
+    try {
+      const client = new SendMailClient({ url, token });
+
+      // This await matters. The promise was previously left floating, so the
+      // surrounding try/catch could never see its rejection — it surfaced as an
+      // unhandled rejection, which terminates the Node process by default.
+      // Registration would return 201 and the server would then die, so the very
+      // next request got a 502.
+      await client.sendMail({
+        from: { address: from, name: 'Vaultiva Team' },
+        to: [{ email_address: { address: email } }],
+        subject: title,
+        htmlbody: content,
+      });
 
       this.logger.log(`Verification code sent to email: ${email}`);
     } catch (error) {
@@ -80,7 +85,7 @@ export class NotificationsService {
         "channel": "generic",  
       };
 
-      await this.axios.post(`https://${this.configService.get('TERMII_BASE_URL')}/api/sms/send`, data);
+      await axios.post(`https://${this.configService.get('TERMII_BASE_URL')}/api/sms/send`, data);
       this.logger.log(`SMS sent to ${phone}`);
     } catch (error) {
       this.logger.error('Failed to send SMS:', error.message);
@@ -100,7 +105,7 @@ export class NotificationsService {
         "channel": "whatsapp",  
       };
 
-      await this.axios.post(`https://${this.configService.get('TERMII_BASE_URL')}/api/sms/send`, data);
+      await axios.post(`https://${this.configService.get('TERMII_BASE_URL')}/api/sms/send`, data);
       this.logger.log(`WhatsApp message sent to ${formatted}`);
     } catch (error) {
       this.logger.error('Failed to send WhatsApp:', error.message);

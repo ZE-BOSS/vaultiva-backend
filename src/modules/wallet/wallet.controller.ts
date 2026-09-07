@@ -11,10 +11,11 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { WalletService } from './wallet.service';
 import { CreateWalletDto } from './dto/create-wallet.dto';
-import { FundWalletDto } from './dto/fund-wallet.dto';
 import { WithdrawDto } from './dto/withdraw.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { Public } from '../common/decorators/public.decorator';
 import { TransactionType } from './entities/transaction.entity';
+import { PositiveIntPipe } from '../common/pipes/positive-int.pipe';
 
 @ApiTags('Wallet')
 @Controller('wallet')
@@ -42,8 +43,8 @@ export class WalletController {
   @ApiResponse({ status: 200, description: 'Transaction history retrieved successfully' })
   getTransactionHistory(
     @Request() req,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @Query('page', new PositiveIntPipe(1)) page: number,
+    @Query('limit', new PositiveIntPipe(20, 100)) limit: number,
   ) {
     return this.walletService.getTransactionHistory(req.user.id, page, limit);
   }
@@ -65,6 +66,7 @@ export class WalletController {
   }
 
   @Post('webhook')
+  @Public()
   @ApiOperation({ summary: 'Process payment webhook' })
   @ApiResponse({ status: 200, description: 'Webhook processed successfully' })
   processWebhook(@Body() payload: any) {

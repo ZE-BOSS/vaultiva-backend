@@ -11,17 +11,19 @@ import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { LocalAuthGuard } from '../common/guards/local-auth.guard';
+import { Public } from '../common/decorators/public.decorator';
 import { User } from '../users/entities/user.entity';
 import { BiometricLoginDto } from './dto/biometric-login.dto';
 import { RegisterBiometricDto } from './dto/register-biometric.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
-@UseGuards(ThrottlerGuard)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @Public()
+  @UseGuards(ThrottlerGuard)
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'Verification code sent' })
   @ApiResponse({ status: 409, description: 'User already exists' })
@@ -30,24 +32,29 @@ export class AuthController {
   }
 
   @Post('resend-code')
+  @Public()
+  @UseGuards(ThrottlerGuard)
   @ApiOperation({ summary: 'Resend verification code' })
   async resendCode(@Body() createUserDto: CreateUserDto) {
     return this.authService.resendCode(createUserDto);
   }
 
   @Post('verify-code')
+  @Public()
   @ApiOperation({ summary: 'Verify code sent to email or phone' })
   async verifyCode(@Body() body: { contact: string; code: string }) {
     return this.authService.verifyCode(body.contact, body.code);
   }
 
   @Post('complete-profile')
+  @Public()
   @ApiOperation({ summary: 'Complete user profile and create wallets' })
   async completeProfile(@Body() body: { contact: string; data: Partial<User> }) {
     return this.authService.completeProfile(body.contact, body.data);
   }
 
   @Post('login')
+  @Public()
   @UseGuards(LocalAuthGuard)
   @ApiOperation({ summary: 'Login user' })
   @ApiResponse({ status: 200, description: 'User successfully logged in' })

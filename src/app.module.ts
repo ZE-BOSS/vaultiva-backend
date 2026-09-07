@@ -10,6 +10,7 @@ import * as winston from 'winston';
 
 import { DatabaseConfig } from './config/database.config';
 import { RedisConfig } from './config/redis.config';
+import { validateEnv } from './config/env.validation';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { UsersModule } from '@/modules/users/users.module';
 import { WalletModule } from '@/modules/wallet/wallet.module';
@@ -18,6 +19,14 @@ import { NotificationsModule } from '@/modules/notifications/notifications.modul
 import { PaymentsModule } from '@/modules/payments/payments.module';
 import { HealthModule } from '@/modules/health/health.module';
 import { KycModule } from './modules/kyc/kyc.module';
+import { EscrowModule } from './modules/escrow/escrow.module';
+import { BillSplittingModule } from './modules/bill-splitting/bill-splitting.module';
+import { CrowdfundingModule } from './modules/crowdfunding/crowdfunding.module';
+import { SharedWalletsModule } from './modules/shared-wallets/shared-wallets.module';
+import { AiInsightsModule } from './modules/ai-insights/ai-insights.module';
+import { RewardsModule } from './modules/rewards/rewards.module';
+import { LedgerModule } from './modules/ledger/ledger.module';
+import { TransfersModule } from './modules/transfers/transfers.module';
 
 @Module({
   imports: [
@@ -25,6 +34,7 @@ import { KycModule } from './modules/kyc/kyc.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+      validate: validateEnv,
     }),
 
     // Database
@@ -85,7 +95,15 @@ import { KycModule } from './modules/kyc/kyc.module';
     PaymentsModule,
     WalletModule,
     HealthModule,
-    KycModule
+    KycModule,
+    EscrowModule,
+    BillSplittingModule,
+    CrowdfundingModule,
+    SharedWalletsModule,
+    AiInsightsModule,
+    RewardsModule,
+    LedgerModule,
+    TransfersModule,
   ],
 })
 export class AppModule {}

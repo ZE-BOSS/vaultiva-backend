@@ -1,2 +1,9 @@
 node_modules
 .env
+
+# Local runtime + build artefacts
+api.out.log
+api.err.log
+*.tsbuildinfo
+eb-tail.log
+.elasticbeanstalk/

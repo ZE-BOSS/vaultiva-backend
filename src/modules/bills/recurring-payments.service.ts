@@ -15,8 +15,8 @@ export class RecurringPaymentsService {
 
   async createRecurringPayment(data: Partial<RecurringPayment>): Promise<RecurringPayment> {
     const recurring = this.recurringRepo.create({
-        ...data,
-        startDate: this.calculateNextRun(data.frequency, new Date(), data.duration),
+      ...data,
+      startDate: this.calculateNextRun(data.frequency || RecurrenceFrequency.DAILY, new Date(), data.duration || 1),
     });
     return this.recurringRepo.save(recurring);
   }
@@ -43,17 +43,21 @@ export class RecurringPaymentsService {
   }
 
   async listRecurring(userId: string, type: TransactionType) {
-    return this.recurringRepo.find({ where: { userId, status: RecurringStatus.ACTIVE, transaction: { type }} });
+    return this.recurringRepo.find({ 
+      where: { userId, status: RecurringStatus.ACTIVE },
+      relations: ['transaction'],
+    });
   }
 
   async processDuePayments(today: Date = new Date()): Promise<void> {
-    const duePayments = await this.recurringRepo.find({
-        where: {
-            status: RecurringStatus.ACTIVE,
-            startDate: LessThanOrEqual(today),
-        },
-        relations: ['bill', 'user', 'transaction', 'transaction.wallet'],
+    const allActivePayments = await this.recurringRepo.find({
+      where: { status: RecurringStatus.ACTIVE },
+      relations: ['user', 'transaction', 'transaction.wallet'],
     });
+
+    const duePayments = allActivePayments.filter(payment => 
+      payment.startDate <= today
+    );
 
     for (const recurring of duePayments) {
         const shouldProcess = this.shouldProcess(recurring, today);
