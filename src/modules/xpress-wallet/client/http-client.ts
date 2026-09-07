@@ -35,13 +35,31 @@ export class HttpClient {
     this.setupInterceptors();
   }
 
-  // Explicit init method (call after instantiating)
+  /**
+   * Prepare the client for use.
+   *
+   * The merchant API authenticates with a Bearer API key; the email/password
+   * login here predates that and returns x-access-token/x-refresh-token. When an
+   * apiKey is configured there is no session to establish, so this is a no-op.
+   */
   async init(): Promise<void> {
+    if (this.config.apiKey) {
+      this.client.defaults.headers.common['Authorization'] = `Bearer ${this.config.apiKey}`;
+      return;
+    }
+
+    if (!this.config.xpressEmail || !this.config.xpressPassword) {
+      throw new XpressWalletError(
+        'Xpress Wallet is not configured: set XPRESS_SECRET_KEY, or both ' +
+          'XPRESS_EMAIL and XPRESS_PASSWORD.',
+      );
+    }
+
     const { tokens } = await this.login({
       email: this.config.xpressEmail,
       password: this.config.xpressPassword,
     });
-    
+
     this.setTokens(tokens);
     this.setupInterceptors();
   }
@@ -101,6 +119,11 @@ export class HttpClient {
   private setupInterceptors(): void {
     // Request interceptor to add auth headers
     this.client.interceptors.request.use((config) => {
+      // API-key mode carries a static Authorization header; there is no session.
+      if (this.config.apiKey) {
+        config.headers['Authorization'] = `Bearer ${this.config.apiKey}`;
+        return config;
+      }
       if (this.tokens) {
         config.headers['X-Access-Token'] = this.tokens.accessToken;
         config.headers['X-Refresh-Token'] = this.tokens.refreshToken;

@@ -24,11 +24,15 @@ export class PaymentsService {
     private eventEmitter: EventEmitter2,
     private readonly config: ConfigService,
   ) {
-    if (!this.config.get('XPRESS_EMAIL') || !this.config.get('XPRESS_PASSWORD')) {
+    const apiKey = this.config.get<string>('XPRESS_SECRET_KEY');
+    if (!apiKey && !this.config.get('XPRESS_EMAIL')) {
       this.logger.warn('XpressWallet credentials not configured');
     }
 
     this.xpressService = new XpressWalletSDK({
+      // The merchant API is Bearer-key authenticated; email/password remains as a
+      // fallback for the older session-based endpoints.
+      apiKey,
       xpressEmail: this.config.get<string>('XPRESS_EMAIL'),
       xpressPassword: this.config.get<string>('XPRESS_PASSWORD'),
       baseUrl: this.config.get<string>('XPRESS_BASEURL'),

@@ -43,8 +43,21 @@ async function bootstrap() {
         logger.warn('ALLOWED_ORIGINS is not set — browser clients will be blocked by CORS. ' +
             'Set it to your frontend origins, comma separated.');
     }
+    const originMatchers = allowedOrigins.map((pattern) => {
+        const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^.]+');
+        return new RegExp(`^${escaped}$`);
+    });
     app.enableCors({
-        origin: isProd ? allowedOrigins : true,
+        origin: isProd
+            ? (origin, callback) => {
+                if (!origin)
+                    return callback(null, true);
+                const allowed = originMatchers.some((re) => re.test(origin));
+                if (!allowed)
+                    logger.warn(`Blocked CORS request from origin: ${origin}`);
+                return callback(null, allowed);
+            }
+            : true,
         credentials: true,
     });
     app.setGlobalPrefix(configService.get('API_PREFIX', 'api/v1'));
@@ -3908,11 +3921,7 @@ const OPTIONAL_GROUPS = {
         'FLUTTERWAVE_BANK_NAME',
         'FLUTTERWAVE_BANK_CODE',
     ],
-    'Xpress Wallet (bank accounts, transfers)': [
-        'XPRESS_BASEURL',
-        'XPRESS_EMAIL',
-        'XPRESS_PASSWORD',
-    ],
+    'Xpress Wallet (bank accounts, transfers)': ['XPRESS_BASEURL', 'XPRESS_SECRET_KEY'],
     'ZeptoMail (transactional email)': ['ZEPTO_URL', 'ZEPTO_API_KEY', 'ZEPTO_FROM'],
     'Termii (SMS / OTP)': ['TERMII_BASE_URL', 'TERMII_API_KEY'],
     'Sumsub (KYC)': ['SUMSUB_APP_TOKEN', 'SUMSUB_SECRET_KEY'],
@@ -5236,10 +5245,12 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         this.eventEmitter = eventEmitter;
         this.config = config;
         this.logger = new common_1.Logger(PaymentsService_1.name);
-        if (!this.config.get('XPRESS_EMAIL') || !this.config.get('XPRESS_PASSWORD')) {
+        const apiKey = this.config.get('XPRESS_SECRET_KEY');
+        if (!apiKey && !this.config.get('XPRESS_EMAIL')) {
             this.logger.warn('XpressWallet credentials not configured');
         }
         this.xpressService = new xpress_wallet_1.XpressWalletSDK({
+            apiKey,
             xpressEmail: this.config.get('XPRESS_EMAIL'),
             xpressPassword: this.config.get('XPRESS_PASSWORD'),
             baseUrl: this.config.get('XPRESS_BASEURL'),
@@ -5528,6 +5539,14 @@ class HttpClient {
         this.setupInterceptors();
     }
     async init() {
+        if (this.config.apiKey) {
+            this.client.defaults.headers.common['Authorization'] = `Bearer ${this.config.apiKey}`;
+            return;
+        }
+        if (!this.config.xpressEmail || !this.config.xpressPassword) {
+            throw new XpressWalletError('Xpress Wallet is not configured: set XPRESS_SECRET_KEY, or both ' +
+                'XPRESS_EMAIL and XPRESS_PASSWORD.');
+        }
         const { tokens } = await this.login({
             email: this.config.xpressEmail,
             password: this.config.xpressPassword,
@@ -5574,6 +5593,10 @@ class HttpClient {
     }
     setupInterceptors() {
         this.client.interceptors.request.use((config) => {
+            if (this.config.apiKey) {
+                config.headers['Authorization'] = `Bearer ${this.config.apiKey}`;
+                return config;
+            }
             if (this.tokens) {
                 config.headers['X-Access-Token'] = this.tokens.accessToken;
                 config.headers['X-Refresh-Token'] = this.tokens.refreshToken;

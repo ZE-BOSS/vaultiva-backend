@@ -64,8 +64,33 @@ async function bootstrap() {
     );
   }
 
+  /**
+   * Entries may contain `*` as a wildcard for one or more subdomain characters,
+   * e.g. `https://*.vercel.app`. Vercel mints a fresh subdomain for every
+   * deployment and preview branch, so an exact list silently breaks the site on
+   * the next deploy — which is precisely what happened with
+   * vaultiva-site-jyow.vercel.app.
+   *
+   * The wildcard is deliberately bounded: `*` never matches a dot, so
+   * `https://*.vercel.app` admits `foo.vercel.app` but not
+   * `evil.com/x.vercel.app` or `a.b.vercel.app`.
+   */
+  const originMatchers = allowedOrigins.map((pattern) => {
+    const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^.]+');
+    return new RegExp(`^${escaped}$`);
+  });
+
   app.enableCors({
-    origin: isProd ? allowedOrigins : true,
+    origin: isProd
+      ? (origin, callback) => {
+          // Non-browser callers (the mobile app, curl, server-to-server) send no
+          // Origin header and must not be rejected.
+          if (!origin) return callback(null, true);
+          const allowed = originMatchers.some((re) => re.test(origin));
+          if (!allowed) logger.warn(`Blocked CORS request from origin: ${origin}`);
+          return callback(null, allowed);
+        }
+      : true,
     credentials: true,
   });
 

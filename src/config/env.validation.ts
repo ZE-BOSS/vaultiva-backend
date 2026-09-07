@@ -31,11 +31,9 @@ const OPTIONAL_GROUPS: Record<string, string[]> = {
     'FLUTTERWAVE_BANK_NAME',
     'FLUTTERWAVE_BANK_CODE',
   ],
-  'Xpress Wallet (bank accounts, transfers)': [
-    'XPRESS_BASEURL',
-    'XPRESS_EMAIL',
-    'XPRESS_PASSWORD',
-  ],
+  // The merchant API authenticates with a Bearer API key; XPRESS_EMAIL/PASSWORD
+  // are only needed for the older session-based endpoints.
+  'Xpress Wallet (bank accounts, transfers)': ['XPRESS_BASEURL', 'XPRESS_SECRET_KEY'],
   'ZeptoMail (transactional email)': ['ZEPTO_URL', 'ZEPTO_API_KEY', 'ZEPTO_FROM'],
   'Termii (SMS / OTP)': ['TERMII_BASE_URL', 'TERMII_API_KEY'],
   'Sumsub (KYC)': ['SUMSUB_APP_TOKEN', 'SUMSUB_SECRET_KEY'],

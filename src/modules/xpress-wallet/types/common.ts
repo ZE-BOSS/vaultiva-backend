@@ -26,8 +26,20 @@ export interface XpressWalletConfig {
   baseUrl: string;
   timeout?: number;
   retries?: number;
-  xpressEmail: string;
-  xpressPassword: string;
+
+  /**
+   * Merchant API key (`sk_live_…` / `sk_test_…`), sent as a Bearer token.
+   *
+   * This is what the documented merchant API actually expects — see
+   * https://documenter.getpostman.com/view/30559328/2sAYBSmE7J, where every
+   * endpoint is "AUTHORIZATION: Bearer Token {{merchantAPIKey}}". When set, the
+   * email/password login below is skipped entirely.
+   */
+  apiKey?: string;
+
+  /** Legacy session login. Only used when no apiKey is supplied. */
+  xpressEmail?: string;
+  xpressPassword?: string;
 }
 
 export type TransactionType = 'CREDIT' | 'DEBIT' | 'ALL';
