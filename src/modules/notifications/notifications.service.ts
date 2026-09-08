@@ -10,9 +10,9 @@ import { Notification } from './entities/notification.entity';
 import { CreateNotificationDto } from './dto/notifictions.dto';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { SendMailClient } from "zeptomail";
 import { verifyMail, verifyMessage } from './template/verifymail.template';
-import axios from 'axios';
+import { EmailProvider, resolveEmailProvider } from './providers/email.provider';
+import { SmsProvider, resolveSmsProvider } from './providers/sms.provider';
 
 @Injectable()
 export class NotificationsService {
@@ -23,92 +23,43 @@ export class NotificationsService {
     private readonly notificationRepo: Repository<Notification>,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
-  ) {
+  ) {}
+
+  private emailProvider?: EmailProvider;
+  private smsProvider?: SmsProvider;
+
+  private get email(): EmailProvider {
+    return (this.emailProvider ??= resolveEmailProvider(this.configService, this.logger));
   }
 
-  async sendVerificationCode(recipient: string, name = "", code: string, type: "email" | "phone") {
+  private get sms(): SmsProvider {
+    return (this.smsProvider ??= resolveSmsProvider(this.configService, this.logger));
+  }
 
-    if (type == "email") {
-      return this.sendEmail(
-        recipient, 
-        "Verification Code",
-        verifyMail(name, code)
-      );
-    } else if (type == "phone") {
-      await this.sendSms(recipient, verifyMessage(code));
-      await this.sendWhatsApp(recipient, verifyMessage(code));
-      return;
+  async sendVerificationCode(
+    recipient: string,
+    name = '',
+    code: string,
+    type: 'email' | 'phone',
+  ) {
+    if (type === 'email') {
+      return this.sendEmail(recipient, 'Verification Code', verifyMail(name, code));
     }
-
+    if (type === 'phone') {
+      return this.sms.send(recipient, verifyMessage(code));
+    }
     throw new Error('Invalid recipient type');
   }
 
   private async sendEmail(email: string, title: string, content: string) {
-    const url = this.configService.get('ZEPTO_URL');
-    const token = this.configService.get('ZEPTO_API_KEY');
-    const from = this.configService.get('ZEPTO_FROM');
-
-    if (!token) {
-      throw new Error('ZEPTO_API_KEY is not configured — cannot send email');
-    }
-
     try {
-      const client = new SendMailClient({ url, token });
-
-      // This await matters. The promise was previously left floating, so the
-      // surrounding try/catch could never see its rejection — it surfaced as an
-      // unhandled rejection, which terminates the Node process by default.
-      // Registration would return 201 and the server would then die, so the very
-      // next request got a 502.
-      await client.sendMail({
-        from: { address: from, name: 'Vaultiva Team' },
-        to: [{ email_address: { address: email } }],
-        subject: title,
-        htmlbody: content,
-      });
-
-      this.logger.log(`Verification code sent to email: ${email}`);
+      await this.email.send(email, title, content);
+      this.logger.log(`Sent "${title}" to ${email} via ${this.email.name}`);
     } catch (error) {
-      this.logger.error('Failed to send email:', error?.response?.data || error.message);
-      throw error;
-    }
-  }
-
-  private async sendSms(phone: string, sms: string) {
-    try {
-      const data = {
-        "to": phone,
-        "from": "Vaultiva Tech",
-        "sms": sms,
-        "type": "plain",
-        "api_key": this.configService.get('TERMII_API_KEY'),
-        "channel": "generic",  
-      };
-
-      await axios.post(`https://${this.configService.get('TERMII_BASE_URL')}/api/sms/send`, data);
-      this.logger.log(`SMS sent to ${phone}`);
-    } catch (error) {
-      this.logger.error('Failed to send SMS:', error.message);
-      throw error;
-    }
-  }
-
-  private async sendWhatsApp(phone: string, message: string) {
-    const formatted = phone.startsWith('+') ? phone : `+${phone}`;
-    try {
-      const data = {
-        "to": phone,
-        "from": "Vaultiva Tech",
-        "sms": message,
-        "type": "plain",
-        "api_key": this.configService.get('TERMII_API_KEY'),
-        "channel": "whatsapp",  
-      };
-
-      await axios.post(`https://${this.configService.get('TERMII_BASE_URL')}/api/sms/send`, data);
-      this.logger.log(`WhatsApp message sent to ${formatted}`);
-    } catch (error) {
-      this.logger.error('Failed to send WhatsApp:', error.message);
+      this.logger.error(
+        `Failed to send "${title}" to ${email}:`,
+        error?.response?.data ?? error.message,
+      );
       throw error;
     }
   }

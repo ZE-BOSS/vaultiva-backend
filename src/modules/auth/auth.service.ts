@@ -108,7 +108,7 @@ export class AuthService {
     identifier: string,
     category: CodeCategory,
     name = '',
-  ): Promise<void> {
+  ): Promise<boolean> {
     const channel = this.channelOf(identifier);
     const code = this.generateCode();
 
@@ -117,6 +117,7 @@ export class AuthService {
 
     try {
       await this.notificationsService.sendVerificationCode(identifier, name, code, channel);
+      return true;
     } catch (error) {
       // Delivery depends on ZeptoMail / Termii being configured. A provider
       // outage or missing key must not fail the request or, worse, escape as an
@@ -125,7 +126,24 @@ export class AuthService {
         `Could not deliver the ${category} code to ${identifier} over ${channel}: ` +
           `${(error as Error).message}`,
       );
+      return false;
     }
+  }
+
+  /**
+   * The client showed "Verification code sent" whether or not anything was
+   * sent, so a delivery failure looked exactly like a code that had not arrived
+   * yet — the user waited, then gave up. `delivered` lets the client say what
+   * actually happened and offer resend straight away.
+   */
+  private codeIssued(identifier: string, delivered: boolean, resent = false) {
+    return {
+      message: delivered
+        ? `Verification code ${resent ? 'resent' : 'sent'} to ${identifier}`
+        : `We could not send a code to ${identifier} right now. Please try again.`,
+      contact: identifier,
+      delivered,
+    };
   }
 
   // ── registration ───────────────────────────────────────────────────────────
@@ -143,11 +161,8 @@ export class AuthService {
       throw new ConflictException('An account with those details already exists');
     }
 
-    await this.issueCode(identifier, CodeCategory.SIGNUP);
-    return {
-      message: `Verification code sent to ${identifier}`,
-      contact: identifier,
-    };
+    const delivered = await this.issueCode(identifier, CodeCategory.SIGNUP);
+    return this.codeIssued(identifier, delivered);
   }
 
   async resendCode(createUserDto: CreateUserDto) {
@@ -155,8 +170,8 @@ export class AuthService {
     if (!identifier) {
       throw new BadRequestException('An email address or phone number is required');
     }
-    await this.issueCode(identifier, CodeCategory.SIGNUP);
-    return { message: `Verification code resent to ${identifier}`, contact: identifier };
+    const delivered = await this.issueCode(identifier, CodeCategory.SIGNUP);
+    return this.codeIssued(identifier, delivered, true);
   }
 
   async verifyCode(contact: string, code: string) {
@@ -195,20 +210,26 @@ export class AuthService {
     // First wallet. Failing here must not lose the completed profile, so it is
     // logged rather than thrown — the client can retry wallet creation.
     try {
-      const existing = await this.walletService.findUserWalletByType(
-        updated.id,
-        WalletType.MAIN,
-      );
-      if (!existing) {
-        await this.walletService.createWallet(updated.id, {
+      let wallet = await this.walletService.findUserWalletByType(updated.id, WalletType.MAIN);
+      if (!wallet) {
+        wallet = await this.walletService.createWallet(updated.id, {
           type: WalletType.MAIN,
           name: 'Main Wallet',
           customerId: updated.id,
           currency: 'NGN',
         });
       }
+
+      // A wallet row on its own is only a balance in our own database — it has
+      // no account number, so nobody can pay money into it. Opening the account
+      // at Xpress is what makes it usable, and it needs BVN and date of birth,
+      // which only arrive with KYC. Signup alone therefore cannot provision one;
+      // this runs as soon as those details exist and is a no-op until then.
+      if (!wallet.providerWalletId && updated.bvn && updated.dateOfBirth) {
+        await this.walletService.provisionBankAccount(wallet.id);
+      }
     } catch (error) {
-      this.logger.error(`Wallet creation failed for user ${updated.id}`, error as Error);
+      this.logger.error(`Wallet setup failed for user ${updated.id}`, error as Error);
     }
 
     return { access_token: this.sign(updated), user: this.sanitise(updated) };
