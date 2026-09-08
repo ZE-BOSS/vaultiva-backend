@@ -111,10 +111,24 @@ Only `Prime Loan` delivers, and only on the `generic` channel — the `dnd` rout
 is not enabled for this workspace (`Route not configured … channel=SMS
 route=DND`), and `N-Alert` is not registered to it.
 
-`TERMII_SENDER_ID` is therefore set to **`Vaultiva`**, which is not registered
-yet: sends fail with a self-explanatory `SENDER_ID_NOT_APPROVED` until someone
-requests that sender ID in the Termii dashboard and it is approved (1–3 business
-days). No code change is needed when it is — the value is already correct.
+`TERMII_SENDER_ID` is therefore set to **`Prime Loan`** as a deliberate stopgap,
+chosen on 8 September 2026 so that phone verification works now. Recipients see
+Vaultiva's OTP arrive from a sender named "Prime Loan", which is wrong branding
+and should not be left in place.
+
+**To fix it:** request the sender ID `Vaultiva` in the Termii dashboard
+(Configure → IDs → Request New Sender ID). Approval takes 1–3 business days.
+When it is approved, change one variable and nothing else:
+
+```bash
+# The value contains no space, so the shorthand is safe here.
+aws elasticbeanstalk update-environment   --environment-name vaultiva-api-prod --region eu-west-1   --option-settings 'Namespace=aws:elasticbeanstalk:application:environment,OptionName=TERMII_SENDER_ID,Value=Vaultiva'
+```
+
+Verified working end to end on 8 September 2026: `POST /auth/register` with a
+phone number returns `delivered: true`, the Termii wallet was debited NGN 5, and
+`POST /auth/verify-code` rejects a wrong code for that number — so the code is
+stored and checkable.
 
 Two consequences worth knowing:
 
