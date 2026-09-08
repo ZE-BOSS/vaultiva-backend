@@ -32,25 +32,31 @@ SMS. That response now carries `delivered: true | false`.
 At Vaultiva's stage 3,000/month is far more headroom than signups will need, so
 **Resend, free tier** is the answer.
 
-### Setting it up
+### Current state — working
 
-1. Create an account at <https://resend.com> and add the domain
-   **vaultivahq.com** (Domains → Add Domain).
-2. Resend shows three DNS records — one `MX` and two `TXT` (DKIM and SPF). Add
-   them in Namecheap under *Advanced DNS*. Verification takes a few minutes.
-3. Create an API key and set it on the backend:
+Configured and verified in production on 8 September 2026:
 
-   ```
-   RESEND_API_KEY=re_xxxxxxxx
-   MAIL_FROM=no-reply@vaultivahq.com
-   ```
+```
+EMAIL_PROVIDER=resend
+RESEND_API_KEY=re_...            # in the Vaultiva Resend account
+MAIL_FROM=no-reply@vaultivahq.com
+```
 
-Nothing else changes — the provider is auto-selected from whichever key is
-present.
+`POST /auth/register` with an email returns `delivered: true`, and a message
+sent from `no-reply@vaultivahq.com` reached `delivered` status at Resend.
+
+DNS lives in Namecheap under *Advanced DNS*: `resend._domainkey` (TXT, DKIM),
+`rsend` and `send` (CNAME), `_dmarc` (TXT). The published DKIM value was
+byte-compared against what Resend expects and matches exactly.
+
+> Resend's dashboard may still show the domain as **pending** for some hours
+> after sending already works — its verification checker lags DNS propagation.
+> Do not treat that badge as the source of truth; the delivery status of an
+> actual message is.
 
 > **Note:** `MAIL_FROM` previously defaulted to `no-reply@vaultiva.com`. That is
-> not the domain in use. Sending from an unverified domain is rejected by every
-> provider, so this must be `vaultivahq.com`.
+> not the domain in use, and every provider rejects an unverified sender
+> domain.
 
 ## Phone — there is no free option
 
@@ -76,8 +82,50 @@ considerably stronger than an SMS OTP, which only proves possession of a SIM.
 That path already exists in the codebase — `provisionBankAccount` requires BVN
 and date of birth before an account can be created.
 
-Turn SMS on later, when there is revenue to pay for it, by setting
-`TERMII_API_KEY`. No code change is needed.
+### Termii, as actually configured
+
+The Termii credentials in use belong to the **Prime Finance** workspace
+(`primefinancials68@gmail.com`), not a Vaultiva account, so Vaultiva's SMS is
+billed to that wallet — about NGN 9,270 at last check, roughly 2,300 messages at
+NGN 5 each.
+
+**SMS is not sending yet, and the blocker is the sender ID.** Termii's dashboard
+lists three sender IDs and its table shows all three as "Approved", but that
+display is wrong — the summary line on the same page says "1 approved · 2
+declined", and `GET /api/sender-id` agrees:
+
+| Sender ID     | Real status |
+|---------------|-------------|
+| `09162673073` | declined    |
+| `09113378646` | declined    |
+| `Prime Loan`  | **active**  |
+
+Sending with either declined ID returns HTTP 422:
+
+```
+SENDER_ID_NOT_APPROVED: sender ID '09162673073' is DECLINED for workspace
+2c3a78e1-… in every country it is registered for
+```
+
+Only `Prime Loan` delivers, and only on the `generic` channel — the `dnd` route
+is not enabled for this workspace (`Route not configured … channel=SMS
+route=DND`), and `N-Alert` is not registered to it.
+
+`TERMII_SENDER_ID` is therefore set to **`Vaultiva`**, which is not registered
+yet: sends fail with a self-explanatory `SENDER_ID_NOT_APPROVED` until someone
+requests that sender ID in the Termii dashboard and it is approved (1–3 business
+days). No code change is needed when it is — the value is already correct.
+
+Two consequences worth knowing:
+
+- Nigerian **DND** blocks `generic`-channel SMS to a large share of numbers.
+  Until the DND route is enabled on the workspace, delivery will be patchy even
+  with an approved sender ID. This is another reason not to make phone
+  verification the primary path.
+- A sender ID containing a space cannot be set through the AWS CLI's
+  `--option-settings` shorthand; it silently fails the whole configuration
+  update and Elastic Beanstalk rolls back and goes Red. Use
+  `--option-settings file://opts.json` for any value with a space.
 
 ## Local development
 
