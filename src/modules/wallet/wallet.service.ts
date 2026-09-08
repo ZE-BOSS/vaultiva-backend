@@ -39,6 +39,64 @@ export class WalletService {
     return this.walletRepository.save(wallet);
   }
 
+  /**
+   * Opens a real bank account for a wallet at Xpress Wallet.
+   *
+   * Creating the wallet row alone gives the user a balance and nothing else —
+   * there is no account number, so no one can pay money in. This is the step
+   * that makes it a usable account.
+   *
+   * Xpress requires a BVN and date of birth, which registration does not
+   * collect; they arrive with KYC. Until then the wallet stays unprovisioned and
+   * this throws a message saying exactly what is missing, rather than failing
+   * somewhere inside the provider call.
+   *
+   * Safe to call more than once: an already-provisioned wallet is returned as-is.
+   */
+  async provisionBankAccount(walletId: string): Promise<Wallet> {
+    const wallet = await this.walletRepository.findOne({
+      where: { id: walletId },
+      relations: ['user'],
+    });
+    if (!wallet) throw new NotFoundException('Wallet not found');
+    if (wallet.providerWalletId) return wallet;
+
+    const user = wallet.user;
+    const missing = [
+      !user?.bvn && 'bvn',
+      !user?.dateOfBirth && 'dateOfBirth',
+      !user?.firstName && 'firstName',
+      !user?.lastName && 'lastName',
+      !user?.phone && 'phone',
+    ].filter(Boolean);
+
+    if (missing.length) {
+      throw new BadRequestException(
+        `Cannot open a bank account until KYC is complete — missing: ${missing.join(', ')}`,
+      );
+    }
+
+    const { wallet: provider } = await this.paymentsService.createCustomerWallet({
+      bvn: user.bvn,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      dateOfBirth: user.dateOfBirth,
+      phoneNumber: user.phone,
+      email: user.email,
+      address: user.address,
+      metadata: { vaultivaUserId: user.id, vaultivaWalletId: wallet.id },
+    });
+
+    wallet.providerWalletId = provider.id;
+    wallet.accountNumber = provider.accountNumber;
+    wallet.accountName = provider.accountName;
+    wallet.bankName = provider.bankName;
+    wallet.bankCode = provider.bankCode;
+
+    this.logger.log(`Opened account ${provider.accountNumber} for wallet ${wallet.id}`);
+    return this.walletRepository.save(wallet);
+  }
+
   async lockWalletFunds(walletId: string, amount: number, duration: number): Promise<void> {
     const wallet = await this.findWalletById(walletId);
     

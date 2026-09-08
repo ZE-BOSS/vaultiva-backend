@@ -31,6 +31,14 @@ export class WalletController {
     return this.walletService.createWallet(req.user.id, createWalletDto);
   }
 
+  @Post(':id/provision-account')
+  @ApiOperation({ summary: 'Open a real bank account for this wallet (requires completed KYC)' })
+  @ApiResponse({ status: 201, description: 'Bank account opened' })
+  @ApiResponse({ status: 400, description: 'KYC incomplete — BVN and date of birth are required' })
+  provisionAccount(@Param('id') id: string) {
+    return this.walletService.provisionBankAccount(id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get user wallets' })
   @ApiResponse({ status: 200, description: 'Wallets retrieved successfully' })

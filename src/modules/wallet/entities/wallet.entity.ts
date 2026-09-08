@@ -42,6 +42,30 @@ export class Wallet {
   @Column({ default: true })
   isActive: boolean;
 
+  /**
+   * The real bank account behind this wallet, provisioned at Xpress Wallet.
+   *
+   * Until these are populated the wallet is a local ledger row only: it cannot
+   * receive an inbound transfer, because there is no account number to send to.
+   * They stay null until KYC supplies a BVN — Xpress will not open an account
+   * without one.
+   */
+  @Column({ nullable: true })
+  accountNumber: string;
+
+  @Column({ nullable: true })
+  accountName: string;
+
+  @Column({ nullable: true })
+  bankName: string;
+
+  @Column({ nullable: true })
+  bankCode: string;
+
+  /** Xpress's own id for the wallet, needed for later calls. */
+  @Column({ nullable: true })
+  providerWalletId: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

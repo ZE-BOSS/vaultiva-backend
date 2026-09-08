@@ -19,6 +19,8 @@ import { RewardsTables1703007000000 } from './007_rewards_tables';
 import { LedgerTables1703008000000 } from './008_ledger_tables';
 import { TransfersTables1703009000000 } from './009_transfers_tables';
 import { RecurringPaymentsTable1703010000000 } from './010_recurring_payments_table';
+import { FixUsersColumns1703011000000 } from './011_fix_users_columns';
+import { WalletBankAccount1703012000000 } from './012_wallet_bank_account';
 
 export const MIGRATIONS = [
   InitialSchema1703001000000,
@@ -31,4 +33,6 @@ export const MIGRATIONS = [
   LedgerTables1703008000000,
   TransfersTables1703009000000,
   RecurringPaymentsTable1703010000000,
+  FixUsersColumns1703011000000,
+  WalletBankAccount1703012000000,
 ];

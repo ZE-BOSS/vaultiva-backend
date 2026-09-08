@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import { config as loadEnv } from 'dotenv';
 import { join } from 'path';
+import { MIGRATIONS } from './migrations';
 
 // The TypeORM CLI boots this file directly, outside the Nest DI container, so
 // nothing has loaded .env yet — ConfigService alone would read undefined.
@@ -14,10 +15,12 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   entities: [join(__dirname, '/../../**/*.entity{.ts,.js}')],
-  // The migrations live here, in `src/modules/database/migrations`. This
-  // previously pointed at `src/database/migrations`, which does not exist, so
-  // `migration:run` found nothing and reported success.
-  migrations: [join(__dirname, '/migrations/*{.ts,.js}')],
+  /**
+   * The same explicit list the app uses. A glob here matched both each migration
+   * file and the barrel that re-exports them, so every migration was discovered
+   * twice and the CLI aborted with "Duplicate migrations".
+   */
+  migrations: MIGRATIONS,
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',
 });

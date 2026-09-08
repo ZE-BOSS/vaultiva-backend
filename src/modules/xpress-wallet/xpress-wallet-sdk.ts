@@ -39,6 +39,18 @@ export class XpressWalletSDK {
   }
 
   /**
+   * Establishes authentication.
+   *
+   * In API-key mode this is a no-op — the request interceptor attaches the
+   * Bearer header on every call. In the legacy email/password mode it performs
+   * the /auth/login exchange. Calling it is always safe and always correct;
+   * nothing called it before, so the session mode could never have worked.
+   */
+  async init(): Promise<void> {
+    await this.httpClient.init();
+  }
+
+  /**
    * Set authentication tokens for API requests
    */
   setTokens(tokens: AuthTokens): void {

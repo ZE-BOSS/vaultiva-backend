@@ -39,6 +39,26 @@ export class PaymentsService {
     });
   }
 
+  /**
+   * Opens a customer wallet at Xpress Wallet, which is what gives a Vaultiva
+   * wallet a real, fundable bank account number.
+   *
+   * Xpress mandates a BVN; there is no way to open an account without one.
+   */
+  async createCustomerWallet(request: {
+    bvn: string;
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    phoneNumber: string;
+    email?: string;
+    address?: string;
+    metadata?: Record<string, unknown>;
+  }) {
+    await this.xpressService.init();
+    return this.xpressService.wallet.createCustomerWallet(request as any);
+  }
+
   async getAccountInfo(): Promise<{ 
     account_number: string; 
     bank_code: string; 
