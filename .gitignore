@@ -7,3 +7,8 @@ api.err.log
 *.tsbuildinfo
 eb-tail.log
 .elasticbeanstalk/
+
+# Build output. Deploys zip dist/ straight from a local `npm run build`,
+# so the compiled bundle never needed to be in git — it just made every
+# commit carry a ~950KB diff.
+dist/
